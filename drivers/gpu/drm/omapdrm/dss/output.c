@@ -20,21 +20,25 @@
 int omapdss_device_init_output(struct omap_dss_device *out,
 			       struct drm_bridge *local_bridge)
 {
+	DSSDBGLN("output.c/omapdss_device_init_output/entry");
 	struct device_node *remote_node;
 	int ret;
 
 	remote_node = of_graph_get_remote_node(out->dev->of_node,
 					       out->of_port, 0);
 	if (!remote_node) {
+		DSSDBGLN("output.c/omapdss_device_init_output/failed to find video sink");
 		dev_dbg(out->dev, "failed to find video sink\n");
 		return 0;
 	}
 
 	out->bridge = of_drm_find_bridge(remote_node);
 	out->panel = of_drm_find_panel(remote_node);
-	if (IS_ERR(out->panel))
+	if (IS_ERR(out->panel)){
+		DSSDBGLN("output.c/omapdss_device_init_output/PANEL IS ERR");
 		out->panel = NULL;
-
+	}
+		
 	of_node_put(remote_node);
 
 	if (out->panel) {
@@ -42,6 +46,7 @@ int omapdss_device_init_output(struct omap_dss_device *out,
 
 		bridge = drm_panel_bridge_add(out->panel);
 		if (IS_ERR(bridge)) {
+			DSSDBGLN("output.c/omapdss_device_init_output/unable to create panel bridge");
 			dev_err(out->dev,
 				"unable to create panel bridge (%ld)\n",
 				PTR_ERR(bridge));
@@ -54,6 +59,7 @@ int omapdss_device_init_output(struct omap_dss_device *out,
 
 	if (local_bridge) {
 		if (!out->bridge) {
+			DSSDBGLN("output.c/omapdss_device_init_output/line/62/-EPROBE_DEFER");
 			ret = -EPROBE_DEFER;
 			goto error;
 		}
@@ -63,13 +69,16 @@ int omapdss_device_init_output(struct omap_dss_device *out,
 	}
 
 	if (!out->bridge) {
+		DSSDBGLN("output.c/omapdss_device_init_output/line/72/-EPROBE_DEFER");
 		ret = -EPROBE_DEFER;
 		goto error;
 	}
 
+	DSSDBGLN("output.c/omapdss_device_init_output/SUCCESS/return 0");
 	return 0;
 
 error:
+	DSSDBGLN("output.c/omapdss_device_init_output/GOTO ERROR");
 	omapdss_device_cleanup_output(out);
 	return ret;
 }

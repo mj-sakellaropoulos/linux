@@ -642,24 +642,30 @@ static enum omap_channel dpi_get_channel(struct dpi_data *dpi)
 
 static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 {
+	DSSDBGLN("dpi.c/dpi_init_output_port/entry");
 	struct omap_dss_device *out = &dpi->output;
 	u32 port_num = 0;
 	int r;
 
+	DSSDBGLN("dpi.c/dpi_init_output_port/call/dpi_bridge_init");
 	dpi_bridge_init(dpi);
 
+	DSSDBGLN("dpi.c/dpi_init_output_port/read_of_reg");
 	of_property_read_u32(port, "reg", &port_num);
 	dpi->id = port_num <= 2 ? port_num : 0;
 
 	switch (port_num) {
 	case 2:
+		DSSDBGLN("dpi.c/dpi_init_output_port/outname=dpi.2");
 		out->name = "dpi.2";
 		break;
 	case 1:
+		DSSDBGLN("dpi.c/dpi_init_output_port/outname=dpi.1");
 		out->name = "dpi.1";
 		break;
 	case 0:
 	default:
+		DSSDBGLN("dpi.c/dpi_init_output_port/outname=dpi.0");
 		out->name = "dpi.0";
 		break;
 	}
@@ -670,14 +676,17 @@ static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 	out->dispc_channel = dpi_get_channel(dpi);
 	out->of_port = port_num;
 
+	DSSDBGLN("dpi.c/dpi_init_output_port/call/omapdss_device_init_output");
 	r = omapdss_device_init_output(out, &dpi->bridge);
 	if (r < 0) {
+		DSSDBGLN("dpi.c/dpi_init_output_port/call/omapdss_device_init_output/FAIL");
 		dpi_bridge_cleanup(dpi);
 		return r;
 	}
 
 	omapdss_device_register(out);
 
+	DSSDBGLN("dpi.c/dpi_init_output_port/SUCCESS/return 0");
 	return 0;
 }
 
@@ -704,14 +713,18 @@ static const struct soc_device_attribute dpi_soc_devices[] = {
 
 static int dpi_init_regulator(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_init_regulator/entry");
 	struct regulator *vdds_dsi;
 
 	/*
 	 * The DPI uses the DSI VDDS on OMAP34xx, OMAP35xx, OMAP36xx, AM37xx and
 	 * DM37xx only.
 	 */
-	if (!soc_device_match(dpi_soc_devices))
+	if (!soc_device_match(dpi_soc_devices)){
+		DSSDBGLN("dpi.c/dpi_init_regulator/IGNORE_PLATFORM/return 0");
 		return 0;
+	}
+		
 
 	vdds_dsi = devm_regulator_get(&dpi->pdev->dev, "vdds_dsi");
 	if (IS_ERR(vdds_dsi)) {
@@ -722,24 +735,32 @@ static int dpi_init_regulator(struct dpi_data *dpi)
 
 	dpi->vdds_dsi_reg = vdds_dsi;
 
+	DSSDBGLN("dpi.c/dpi_init_regulator/default/return 0");
 	return 0;
 }
 
 int dpi_init_port(struct dss_device *dss, struct platform_device *pdev,
 		  struct device_node *port, enum dss_model dss_model)
 {
+	DSSDBGLN("dpi.c/dpi_init_port/entry");
 	struct dpi_data *dpi;
 	struct device_node *ep;
 	u32 datalines;
 	int r;
 
 	dpi = devm_kzalloc(&pdev->dev, sizeof(*dpi), GFP_KERNEL);
-	if (!dpi)
+	if (!dpi){
+		DSSDBGLN("dpi.c/dpi_init_port/return -ENOMEM");
 		return -ENOMEM;
+	}
+		
 
 	ep = of_get_next_child(port, NULL);
-	if (!ep)
+	if (!ep){
+		DSSDBGLN("dpi.c/dpi_init_port/of_get_next_child_FAIL");
 		return 0;
+	}
+		
 
 	r = of_property_read_u32(ep, "data-lines", &datalines);
 	of_node_put(ep);
@@ -755,9 +776,12 @@ int dpi_init_port(struct dss_device *dss, struct platform_device *pdev,
 	dpi->dss = dss;
 	port->data = dpi;
 
+	DSSDBGLN("dpi.c/dpi_init_port/call/dpi_init_regulator");
 	r = dpi_init_regulator(dpi);
-	if (r)
+	if (r){
+		DSSDBGLN("dpi.c/dpi_init_port/call/dpi_init_regulator/fail");
 		return r;
+	}
 
 	return dpi_init_output_port(dpi, port);
 }
