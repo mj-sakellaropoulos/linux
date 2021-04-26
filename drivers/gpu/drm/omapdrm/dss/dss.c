@@ -646,8 +646,11 @@ int dss_set_fck_rate(struct dss_device *dss, unsigned long rate)
 	DSSDBG("set fck to %lu\n", rate);
 
 	r = clk_set_rate(dss->dss_clk, rate);
-	if (r)
+	if (r){
+		DSSDBGLINE("dss.c::dss_set_fck_rate(%d)::return %d", rate, r);
 		return r;
+	}
+		
 
 	dss->dss_clk_rate = clk_get_rate(dss->dss_clk);
 
@@ -745,19 +748,24 @@ static int dss_dpi_select_source_omap2_omap3(struct dss_device *dss, int port,
 static int dss_dpi_select_source_omap4(struct dss_device *dss, int port,
 				       enum omap_channel channel)
 {
+	DSSDBGLINE("dss.c::dss_dpi_select_source_omap4(dss,%d,%d)", port, channel);
 	int val;
 
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD2:
+		DSSDBGLINE("dss.c::dss_dpi_select_source_omap4(dss,%d,%d)::OMAP_DSS_CHANNEL_LCD2/val=0", port, channel);
 		val = 0;
 		break;
 	case OMAP_DSS_CHANNEL_DIGIT:
+		DSSDBGLINE("dss.c::dss_dpi_select_source_omap4(dss,%d,%d)::OMAP_DSS_CHANNEL_DIGIT/val=1", port, channel);
 		val = 1;
 		break;
 	default:
+		DSSDBGLINE("dss.c::dss_dpi_select_source_omap4(dss,%d,%d)::default/-EINVAL", port, channel);
 		return -EINVAL;
 	}
 
+	DSSDBG("dss.c::dss_dpi_select_source_omap4(dss,%d,%d)::REG_FLD_MOD(dss, DSS_CONTROL, val, 17, 17", port, channel);
 	REG_FLD_MOD(dss, DSS_CONTROL, val, 17, 17);
 
 	return 0;
@@ -858,11 +866,8 @@ int dss_runtime_get(struct dss_device *dss)
 	DSSDBG("dss_runtime_get\n");
 
 	r = pm_runtime_get_sync(&dss->pdev->dev);
-	if (WARN_ON(r < 0)) {
-		pm_runtime_put_noidle(&dss->pdev->dev);
-		return r;
-	}
-	return 0;
+	WARN_ON(r < 0);
+	return r < 0 ? r : 0;
 }
 
 void dss_runtime_put(struct dss_device *dss)
@@ -1308,7 +1313,6 @@ static int dss_bind(struct device *dev)
 {
 	struct dss_device *dss = dev_get_drvdata(dev);
 	struct platform_device *drm_pdev;
-	struct dss_pdata pdata;
 	int r;
 
 	r = component_bind_all(dev, NULL);
@@ -1317,9 +1321,9 @@ static int dss_bind(struct device *dev)
 
 	pm_set_vt_switch(0);
 
-	pdata.dss = dss;
-	drm_pdev = platform_device_register_data(NULL, "omapdrm", 0,
-						 &pdata, sizeof(pdata));
+	omapdss_set_dss(dss);
+
+	drm_pdev = platform_device_register_simple("omapdrm", 0, NULL, 0);
 	if (IS_ERR(drm_pdev)) {
 		component_unbind_all(dev, NULL);
 		return PTR_ERR(drm_pdev);
@@ -1335,6 +1339,8 @@ static void dss_unbind(struct device *dev)
 	struct dss_device *dss = dev_get_drvdata(dev);
 
 	platform_device_unregister(dss->drm_pdev);
+
+	omapdss_set_dss(NULL);
 
 	component_unbind_all(dev, NULL);
 }
@@ -1568,7 +1574,15 @@ static int dss_remove(struct platform_device *pdev)
 
 static void dss_shutdown(struct platform_device *pdev)
 {
+	struct omap_dss_device *dssdev = NULL;
+
 	DSSDBG("shutdown\n");
+
+	for_each_dss_output(dssdev) {
+		if (dssdev->state == OMAP_DSS_DISPLAY_ACTIVE &&
+		    dssdev->ops && dssdev->ops->disable)
+			dssdev->ops->disable(dssdev);
+	}
 }
 
 static int dss_runtime_suspend(struct device *dev)
@@ -1641,14 +1655,21 @@ static struct platform_driver * const omap_dss_drivers[] = {
 #endif
 };
 
-int __init omap_dss_init(void)
+static int __init omap_dss_init(void)
 {
 	return platform_register_drivers(omap_dss_drivers,
 					 ARRAY_SIZE(omap_dss_drivers));
 }
 
-void omap_dss_exit(void)
+static void __exit omap_dss_exit(void)
 {
 	platform_unregister_drivers(omap_dss_drivers,
 				    ARRAY_SIZE(omap_dss_drivers));
 }
+
+module_init(omap_dss_init);
+module_exit(omap_dss_exit);
+
+MODULE_AUTHOR("Tomi Valkeinen <tomi.valkeinen@ti.com>");
+MODULE_DESCRIPTION("OMAP2/3/4/5 Display Subsystem");
+MODULE_LICENSE("GPL v2");
