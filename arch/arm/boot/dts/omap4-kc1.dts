@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2016 Paul Kocialkowski <contact@paulk.fr>
+ *
+ * 04/25/2021:
+ * Hansem Ro 					: Backlight, PWM LED, PWM GPTimer, Battery, and pinmux configs, and all other crucial platform support
+ * Michael John Sakellaropoulos : Added LCD powereg, Added required DSS nodes and graph_port connections for LCD2 over DPI
  */
 /dts-v1/;
 
@@ -30,10 +34,188 @@
 			max-brightness = <127>;
 		};
 	};
+
+	bat: battery {
+		compatible = "simple-battery";
+		/* Documentation/devicetree/bindings/power/supply/battery.yaml */
+	};
+
+	chosen {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		stdout-path = "serial2";
+
+	};
+
+	lcd2: display  {
+		//pinctrl-names = "default";
+		//pinctrl-0 = <&lcd_pins>;
+		compatible = "hydis,hv070ws1-105";
+		status = "ok";
+		label = "lcd2";
+		power-supply = <&lcd2_power>;
+		backlight = <&bl>;
+		enable-gpios = <&gpio2 13 GPIO_ACTIVE_HIGH>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			lcd_dpi_port: port@0 {
+				data-lines = <24>;
+				//reg = <1>; //Technically, should have no effect on omap4 platform, setting to <1> stops display working
+				connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+				connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI, tried to resolve missing connector_type warning
+				panel_dpi_in: endpoint@0 {
+					data-lines = <24>;
+					remote-endpoint = <&dpi_out_0>;
+				};
+			};
+		};
+	};
+
+	/* LCD Regulator 3v3 */
+	lcd2_power: lcd2_power_reg {
+		compatible = "regulator-fixed";
+		regulator-name = "lcd2_power_reg";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>; /* gpio_47 3v3 LCD_EN */
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	bl: backlight {
+		pinctrl-names = "default";
+		pinctrl-0 = <&backlight_pins>;
+		compatible = "pwm-backlight";
+		brightness-levels = <0 4 8 16 32 64 128 255>;
+		num-interpolated-steps = <256>;
+		default-brightness-level = <4>;
+		enable-gpio = <
+			&gpio2 5 GPIO_ACTIVE_HIGH /* gpio_37 OMAP_RGB_SHTDOWN */
+			&gpio2 13 GPIO_ACTIVE_HIGH /* gpio_45 LCD_EN */
+			&gpio2 15 GPIO_ACTIVE_HIGH /* gpio_47 3V3_EN */
+			>;
+		power-supply = <&lcd2_power>;
+		pwms = <&pwm10 0 75000 0>; /* 75 KHz */
+	};
+
+	pwm10: dmtimer-pwm@10 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&timer10_pins>;
+		gpio = <&gpio2 28 GPIO_ACTIVE_HIGH>; /* gpio_92 */
+		compatible = "ti,omap-dmtimer-pwm";
+		ti,timers = <&timer10>;
+		ti,prescaler = <0>; /* prescale = 1 */
+		ti,clock-source = <1>; /* 32 KHz source */
+		#pwm-cells = <3>;
+	};
+};
+
+&dss {
+	compatible = "ti,omap4-dss";
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&dss_dpi_pins>;
+	connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+	connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+	
+	dispc@0  {
+		status = "ok";
+	};
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		dss_dpi_port: port@0 {
+			data-lines = <24>;
+			reg = <1>;
+			connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+			connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+			dpi_out_0: endpoint@0 {
+				connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+				connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+				data-lines = <24>;
+				remote-endpoint = <&panel_dpi_in>;
+			};
+		};
+	};
+};
+
+&dsi1 {
+	status = "disabled";
+};
+
+&dsi2 {
+	status = "disabled";
+	vdd-supply = <&vcxio>;
+};
+
+&venc {
+	status = "disabled";
 };
 
 &omap4_pmx_core {
 	pinctrl-names = "default";
+
+	dss_dpi_pins: pinmux_dss_dpi_pins {
+		pinctrl-single,pins = <
+			OMAP4_IOPAD(0x162, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data23 */
+			OMAP4_IOPAD(0x164, PIN_OUTPUT | MUX_MODE5) 	/* dispc2_data22 */
+			OMAP4_IOPAD(0x166, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data21 */
+			OMAP4_IOPAD(0x168, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data20 */
+			OMAP4_IOPAD(0x16a, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data19 */
+			OMAP4_IOPAD(0x16c, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data18 */
+			OMAP4_IOPAD(0x16e, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data15 */
+			OMAP4_IOPAD(0x170, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data14 */
+			OMAP4_IOPAD(0x172, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data13 */
+			OMAP4_IOPAD(0x174, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data12 */
+			OMAP4_IOPAD(0x176, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data11 */
+
+			OMAP4_IOPAD(0x1b4, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data10 */
+			OMAP4_IOPAD(0x1b6, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data9 */
+			OMAP4_IOPAD(0x1b8, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data16 */
+			OMAP4_IOPAD(0x1ba, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data17 */
+			OMAP4_IOPAD(0x1bc, PIN_OUTPUT | MUX_MODE5)	/* dispc2_hsync */
+			OMAP4_IOPAD(0x1be, PIN_OUTPUT | MUX_MODE5)	/* dispc2_pclk */
+			OMAP4_IOPAD(0x1c0, PIN_OUTPUT | MUX_MODE5)	/* dispc2_vsync */
+			OMAP4_IOPAD(0x1c2, PIN_OUTPUT | MUX_MODE5)	/* dispc2_de */
+			OMAP4_IOPAD(0x1c4, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data8 */
+			OMAP4_IOPAD(0x1c6, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data7 */
+			OMAP4_IOPAD(0x1c8, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data6 */
+			OMAP4_IOPAD(0x1ca, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data5 */
+			OMAP4_IOPAD(0x1cc, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data4 */
+			OMAP4_IOPAD(0x1ce, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data3 */
+
+			OMAP4_IOPAD(0x1d0, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data2 */
+			OMAP4_IOPAD(0x1d2, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data1 */
+			OMAP4_IOPAD(0x1d4, PIN_OUTPUT | MUX_MODE5)	/* dispc2_data0 */
+		>;
+	};
+
+	backlight_pins: pinmux_backlight_pins {
+		pinctrl-single,pins = <
+			OMAP4_IOPAD(0x06a, PIN_OUTPUT | MUX_MODE3)		/* gpio_45 */
+		>;
+	};
+
+	timer10_pins: pinmux_timer10_pins {
+		pinctrl-single,pins = <
+			OMAP4_IOPAD(0x0d6, PIN_OUTPUT | MUX_MODE1) /* dmtimer10_pwm_evt.gpio_94*/
+		>;
+	};
+
+	lcd_pins: pinmux_lcd_pins {
+		pinctrl-single,pins = <
+			OMAP4_IOPAD(0x05a, PIN_OUTPUT | MUX_MODE3) /* gpio_37 OMAP_RGB_SHTDOWN */
+			OMAP4_IOPAD(0x06a, PIN_OUTPUT | MUX_MODE3) /* gpio_45 LCD_PWR_ON */
+			OMAP4_IOPAD(0x06e, PIN_OUTPUT | MUX_MODE3) /* gpio_47 3V3 rail enable */
+		>;
+	};
 
 	uart3_pins: pinmux_uart3_pins {
 		pinctrl-single,pins = <
@@ -139,6 +321,12 @@
 	pinctrl-0 = <&i2c4_pins>;
 
 	clock-frequency = <400000>;
+
+	tmp@48 {
+		compatible = "ti,tmp105";
+		reg = <0x48>;
+		status = "okay";
+	};
 };
 
 &mmc1 {
