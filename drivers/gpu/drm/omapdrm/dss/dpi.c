@@ -60,39 +60,60 @@ static enum dss_clk_source dpi_get_clk_src_dra7xx(struct dpi_data *dpi,
 	 * LCD3: FCK/PLL1_3/HDMI_PLL (DRA74x: PLL2_1)
 	 */
 
+	DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/entry");
+
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD:
 	{
 		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_1))
+		{
+			DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/OMAP_DSS_CHANNEL_LCD/return DSS_CLK_SRC_PLL1_1");
 			return DSS_CLK_SRC_PLL1_1;
+		}
 		break;
 	}
 	case OMAP_DSS_CHANNEL_LCD2:
 	{
 		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3))
+		{
+			DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/OMAP_DSS_CHANNEL_LCD2/return DSS_CLK_SRC_PLL1_3");
 			return DSS_CLK_SRC_PLL1_3;
+		}
 		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_3))
+		{
+			DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/OMAP_DSS_CHANNEL_LCD2/return DSS_CLK_SRC_PLL2_3");
 			return DSS_CLK_SRC_PLL2_3;
+		}
 		break;
 	}
 	case OMAP_DSS_CHANNEL_LCD3:
 	{
 		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_1))
+		{
+			DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/OMAP_DSS_CHANNEL_LCD3/return DSS_CLK_SRC_PLL2_1");
 			return DSS_CLK_SRC_PLL2_1;
+		}
 		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3))
+		{
+			DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/OMAP_DSS_CHANNEL_LCD3/return DSS_CLK_SRC_PLL1_3");
 			return DSS_CLK_SRC_PLL1_3;
+		}
+			
 		break;
 	}
 	default:
+		DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/default/break");
 		break;
 	}
 
+	DSSDBGLN("dpi.c/dpi_get_clk_src_dra7xx/return DSS_CLK_SRC_FCK");
 	return DSS_CLK_SRC_FCK;
 }
 
 static enum dss_clk_source dpi_get_clk_src(struct dpi_data *dpi)
 {
 	enum omap_channel channel = dpi->output.dispc_channel;
+	DSSDBGLN("dpi.c/dpi_get_clk_src/entry");
 
 	/*
 	 * XXX we can't currently use DSI PLL for DPI with OMAP3, as the DSI PLL
@@ -102,19 +123,24 @@ static enum dss_clk_source dpi_get_clk_src(struct dpi_data *dpi)
 	switch (dpi->dss_model) {
 	case DSS_MODEL_OMAP2:
 	case DSS_MODEL_OMAP3:
+		DSSDBGLN("dpi.c/dpi_get_clk_src/OMAP2.3/return DSS_CLK_SRC_FCK");
 		return DSS_CLK_SRC_FCK;
 
 	case DSS_MODEL_OMAP4:
 		switch (channel) {
 		case OMAP_DSS_CHANNEL_LCD:
+			DSSDBGLN("dpi.c/dpi_get_clk_src/DSS_MODEL_OMAP4/OMAP_DSS_CHANNEL_LCD/return DSS_CLK_SRC_PLL1_1");
 			return DSS_CLK_SRC_PLL1_1;
 		case OMAP_DSS_CHANNEL_LCD2:
+			DSSDBGLN("dpi.c/dpi_get_clk_src/DSS_MODEL_OMAP4/OMAP_DSS_CHANNEL_LCD2/return DSS_CLK_SRC_PLL2_1");
 			return DSS_CLK_SRC_PLL2_1;
 		default:
+			DSSDBGLN("dpi.c/dpi_get_clk_src/DSS_MODEL_OMAP4/default/return DSS_CLK_SRC_FCK");
 			return DSS_CLK_SRC_FCK;
 		}
 
 	case DSS_MODEL_OMAP5:
+		DSSDBGLN("dpi.c/dpi_get_clk_src/DSS_MODEL_OMAP5");
 		switch (channel) {
 		case OMAP_DSS_CHANNEL_LCD:
 			return DSS_CLK_SRC_PLL1_1;
@@ -126,9 +152,11 @@ static enum dss_clk_source dpi_get_clk_src(struct dpi_data *dpi)
 		}
 
 	case DSS_MODEL_DRA7:
+		DSSDBGLN("dpi.c/dpi_get_clk_src/DSS_MODEL_DRA7/return dpi_get_clk_src_dra7xx(dpi, channel)");
 		return dpi_get_clk_src_dra7xx(dpi, channel);
 
 	default:
+		DSSDBGLN("dpi.c/dpi_get_clk_src/default/return DSS_CLK_SRC_FCK");
 		return DSS_CLK_SRC_FCK;
 	}
 }

@@ -35,6 +35,9 @@ struct seq_file;
 #define DSSDBG(format, ...) \
 	pr_debug(format, ## __VA_ARGS__)
 
+#define DSSDBGLN(format, ...) \
+	pr_debug(format, ## __VA_ARGS__)
+
 #ifdef DSS_SUBSYS_NAME
 #define DSSERR(format, ...) \
 	pr_err("omapdss " DSS_SUBSYS_NAME " error: " format, ##__VA_ARGS__)

@@ -747,18 +747,25 @@ static int dss_dpi_select_source_omap4(struct dss_device *dss, int port,
 {
 	int val;
 
+	DSSDBGLN("dss.c/dss_dpi_select_source_omap4/entry");
+
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD2:
+		DSSDBGLN("dss.c/dss_dpi_select_source_omap4/OMAP_DSS_CHANNEL_LCD2/val=0");
 		val = 0;
 		break;
 	case OMAP_DSS_CHANNEL_DIGIT:
+		DSSDBGLN("dss.c/dss_dpi_select_source_omap4/OMAP_DSS_CHANNEL_DIGIT/val=1");
 		val = 1;
 		break;
 	default:
+		DSSDBGLN("dss.c/dss_dpi_select_source_omap4/default/return -EINVAL");
 		return -EINVAL;
 	}
 
 	REG_FLD_MOD(dss, DSS_CONTROL, val, 17, 17);
+
+	DSSDBGLN("dss.c/dss_dpi_select_source_omap4/return 0");
 
 	return 0;
 }
@@ -767,6 +774,8 @@ static int dss_dpi_select_source_omap5(struct dss_device *dss, int port,
 				       enum omap_channel channel)
 {
 	int val;
+
+	DSSDBGLN("dss.c/dss_dpi_select_source_omap5/entry");
 
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD:
@@ -793,6 +802,7 @@ static int dss_dpi_select_source_omap5(struct dss_device *dss, int port,
 static int dss_dpi_select_source_dra7xx(struct dss_device *dss, int port,
 					enum omap_channel channel)
 {
+	DSSDBGLN("dss.c/dss_dpi_select_source_dra7xx/entry");
 	switch (port) {
 	case 0:
 		return dss_dpi_select_source_omap5(dss, port, channel);
@@ -814,6 +824,7 @@ static int dss_dpi_select_source_dra7xx(struct dss_device *dss, int port,
 int dss_dpi_select_source(struct dss_device *dss, int port,
 			  enum omap_channel channel)
 {
+	DSSDBGLN("dss.c/dss_dpi_select_source/entry");
 	return dss->feat->ops->dpi_select_source(dss, port, channel);
 }
 
