@@ -60,60 +60,39 @@ static enum dss_clk_source dpi_get_clk_src_dra7xx(struct dpi_data *dpi,
 	 * LCD3: FCK/PLL1_3/HDMI_PLL (DRA74x: PLL2_1)
 	 */
 
-	DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)", channel);
-
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD:
 	{
-		DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "OMAP_DSS_CHANNEL_LCD");
-		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_1)){
-			DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_PLL1_1");
+		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_1))
 			return DSS_CLK_SRC_PLL1_1;
-		}
 		break;
 	}
 	case OMAP_DSS_CHANNEL_LCD2:
 	{
-		DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "OMAP_DSS_CHANNEL_LCD2");
-		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3)){
-			DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_PLL1_3");
+		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3))
 			return DSS_CLK_SRC_PLL1_3;
-		}
-			
-		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_3)){
-			DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_PLL2_3");
+		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_3))
 			return DSS_CLK_SRC_PLL2_3;
-		}
-			
 		break;
 	}
 	case OMAP_DSS_CHANNEL_LCD3:
 	{
-		DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "OMAP_DSS_CHANNEL_LCD3");
-		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_1)){
-			DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_PLL2_1");
+		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL2_1))
 			return DSS_CLK_SRC_PLL2_1;
-		}
-			
-		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3)){
-			DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_PLL1_3");
+		if (dss_pll_find_by_src(dpi->dss, DSS_CLK_SRC_PLL1_3))
 			return DSS_CLK_SRC_PLL1_3;
-		}
 		break;
 	}
 	default:
-		DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "default break");
 		break;
 	}
 
-	DSSDBGLINE("dpi.c::dpi_get_clk_src_dra7xx(%d)::%s", channel, "return DSS_CLK_SRC_FCK");
 	return DSS_CLK_SRC_FCK;
 }
 
 static enum dss_clk_source dpi_get_clk_src(struct dpi_data *dpi)
 {
 	enum omap_channel channel = dpi->output.dispc_channel;
-	DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)", dpi->id);
 
 	/*
 	 * XXX we can't currently use DSI PLL for DPI with OMAP3, as the DSI PLL
@@ -123,42 +102,33 @@ static enum dss_clk_source dpi_get_clk_src(struct dpi_data *dpi)
 	switch (dpi->dss_model) {
 	case DSS_MODEL_OMAP2:
 	case DSS_MODEL_OMAP3:
-		DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP2/3", "return DSS_CLK_SRC_FCK");
 		return DSS_CLK_SRC_FCK;
 
 	case DSS_MODEL_OMAP4:
 		switch (channel) {
 		case OMAP_DSS_CHANNEL_LCD:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP4","return DSS_CLK_SRC_PLL1_1");
 			return DSS_CLK_SRC_PLL1_1;
 		case OMAP_DSS_CHANNEL_LCD2:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP4","return DSS_CLK_SRC_PLL2_1");
 			return DSS_CLK_SRC_PLL2_1;
 		default:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP4","default return DSS_CLK_SRC_FCK");
 			return DSS_CLK_SRC_FCK;
 		}
 
 	case DSS_MODEL_OMAP5:
 		switch (channel) {
 		case OMAP_DSS_CHANNEL_LCD:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP5","return DSS_CLK_SRC_PLL1_1");
 			return DSS_CLK_SRC_PLL1_1;
 		case OMAP_DSS_CHANNEL_LCD3:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP5","return DSS_CLK_SRC_PLL2_1");
 			return DSS_CLK_SRC_PLL2_1;
 		case OMAP_DSS_CHANNEL_LCD2:
 		default:
-			DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "OMAP5","default return DSS_CLK_SRC_FCK");
 			return DSS_CLK_SRC_FCK;
 		}
 
 	case DSS_MODEL_DRA7:
-		DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "DRA7","return dpi_get_clk_src_dra7xx()...");
 		return dpi_get_clk_src_dra7xx(dpi, channel);
 
 	default:
-		DSSDBGLINE("dpi.c::dpi_get_clk_src(ID=%d)::MODEL=%s::%s", dpi->id, "MAIN DEFAULT","return DSS_CLK_SRC_FCK");
 		return DSS_CLK_SRC_FCK;
 	}
 }
@@ -614,46 +584,36 @@ static void dpi_bridge_cleanup(struct dpi_data *dpi)
  */
 static enum omap_channel dpi_get_channel(struct dpi_data *dpi)
 {
-	DSSDBGLINE("dpi.c::dpi_get_channel()::BEGIN");
-
 	switch (dpi->dss_model) {
 	case DSS_MODEL_OMAP2:
 	case DSS_MODEL_OMAP3:
-		DSSDBGLINE("dpi.c::dpi_get_channel()::OMAP2/3::return OMAP_DSS_CHANNEL_LCD");
 		return OMAP_DSS_CHANNEL_LCD;
 
 	case DSS_MODEL_DRA7:
 		switch (dpi->id) {
 		case 2:
-			DSSDBGLINE("dpi.c::dpi_get_channel()::DRA7::return OMAP_DSS_CHANNEL_LCD3");
 			return OMAP_DSS_CHANNEL_LCD3;
 		case 1:
-			DSSDBGLINE("dpi.c::dpi_get_channel()::DRA7::return OMAP_DSS_CHANNEL_LCD2");
 			return OMAP_DSS_CHANNEL_LCD2;
 		case 0:
 		default:
-			DSSDBGLINE("dpi.c::dpi_get_channel()::DRA7::return OMAP_DSS_CHANNEL_LCD");
 			return OMAP_DSS_CHANNEL_LCD;
 		}
 
 	case DSS_MODEL_OMAP4:
-		DSSDBGLINE("dpi.c::dpi_get_channel()::OMAP4::return OMAP_DSS_CHANNEL_LCD2");
 		return OMAP_DSS_CHANNEL_LCD2;
 
 	case DSS_MODEL_OMAP5:
-		DSSDBGLINE("dpi.c::dpi_get_channel()::OMAP4::return OMAP_DSS_CHANNEL_LCD3");
 		return OMAP_DSS_CHANNEL_LCD3;
 
 	default:
 		DSSWARN("unsupported DSS version\n");
-		DSSDBGLINE("dpi.c::dpi_get_channel()::DSS_UNSUPPORTED::return OMAP_DSS_CHANNEL_LCD");
 		return OMAP_DSS_CHANNEL_LCD;
 	}
 }
 
 static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 {
-	DSSDBGLINE("dpi.c::dpi_init_output_port()::BEGIN");
 	struct omap_dss_device *out = &dpi->output;
 	u32 port_num = 0;
 	int r;
@@ -663,21 +623,16 @@ static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 	of_property_read_u32(port, "reg", &port_num);
 	dpi->id = port_num <= 2 ? port_num : 0;
 
-	DSSDBGLINE("dpi.c::dpi_init_output_port()::READ VALUE [%s] from reg key in devicetree", dpi->id);
-
 	switch (port_num) {
 	case 2:
 		out->name = "dpi.2";
-		DSSDBGLINE("dpi.c::dpi_init_output_port()::out->name=dpi.2");
 		break;
 	case 1:
 		out->name = "dpi.1";
-		DSSDBGLINE("dpi.c::dpi_init_output_port()::out->name=dpi.1");
 		break;
 	case 0:
 	default:
 		out->name = "dpi.0";
-		DSSDBGLINE("dpi.c::dpi_init_output_port()::DEFAULT::out->name=dpi.0");
 		break;
 	}
 
@@ -686,7 +641,6 @@ static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 	out->type = OMAP_DISPLAY_TYPE_DPI;
 	out->dispc_channel = dpi_get_channel(dpi);
 	out->of_port = port_num;
-	out->owner = THIS_MODULE;
 
 	r = omapdss_device_init_output(out, &dpi->bridge);
 	if (r < 0) {
