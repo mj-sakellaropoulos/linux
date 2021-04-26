@@ -247,6 +247,7 @@ static bool dpi_calc_dss_cb(unsigned long fck, void *data)
 static bool dpi_pll_clk_calc(struct dpi_data *dpi, unsigned long pck,
 		struct dpi_clk_calc_ctx *ctx)
 {
+	DSSDBGLN("dpi.c/dpi_pll_clk_calc/entry");
 	unsigned long clkin;
 
 	memset(ctx, 0, sizeof(*ctx));
@@ -264,10 +265,12 @@ static bool dpi_pll_clk_calc(struct dpi_data *dpi, unsigned long pck,
 		pll_min = 0;
 		pll_max = 0;
 
+		DSSDBGLN("dpi.c/dpi_pll_clk_calc/return/call/dss_pll_calc_a");
 		return dss_pll_calc_a(ctx->dpi->pll, clkin,
 				pll_min, pll_max,
 				dpi_calc_pll_cb, ctx);
 	} else { /* DSS_PLL_TYPE_B */
+		DSSDBGLN("dpi.c/dpi_pll_clk_calc/call/dss_pll_calc_b");
 		dss_pll_calc_b(dpi->pll, clkin, pck, &ctx->pll_cinfo);
 
 		ctx->dispc_cinfo.lck_div = 1;
@@ -282,6 +285,7 @@ static bool dpi_pll_clk_calc(struct dpi_data *dpi, unsigned long pck,
 static bool dpi_dss_clk_calc(struct dpi_data *dpi, unsigned long pck,
 			     struct dpi_clk_calc_ctx *ctx)
 {
+	DSSDBGLN("dpi.c/dpi_dss_clk_calc/entry");
 	int i;
 
 	/*
@@ -305,9 +309,13 @@ static bool dpi_dss_clk_calc(struct dpi_data *dpi, unsigned long pck,
 		ok = dss_div_calc(dpi->dss, pck, ctx->pck_min,
 				  dpi_calc_dss_cb, ctx);
 		if (ok)
+		{
+			DSSDBGLN("dpi.c/dpi_dss_clk_calc/call/dss_div_calc/return/SUCCESS");
 			return ok;
+		}
 	}
 
+	DSSDBGLN("dpi.c/dpi_dss_clk_calc/FAIL");
 	return false;
 }
 
@@ -315,54 +323,72 @@ static bool dpi_dss_clk_calc(struct dpi_data *dpi, unsigned long pck,
 
 static int dpi_set_pll_clk(struct dpi_data *dpi, unsigned long pck_req)
 {
+	DSSDBGLN("dpi.c/dpi_set_pll_clk/entry");
 	struct dpi_clk_calc_ctx ctx;
 	int r;
 	bool ok;
 
 	ok = dpi_pll_clk_calc(dpi, pck_req, &ctx);
-	if (!ok)
+	if (!ok){
+		DSSDBGLN("dpi.c/dpi_set_pll_clk/call/dpi_pll_clk_calc/FAIL");
 		return -EINVAL;
+	}
 
 	r = dss_pll_set_config(dpi->pll, &ctx.pll_cinfo);
-	if (r)
+	if (r){
+		DSSDBGLN("dpi.c/dpi_set_pll_clk/call/dss_pll_set_config/FAIL");
 		return r;
+	}	
 
+	DSSDBGLN("dpi.c/dpi_set_pll_clk/call/dss_select_lcd_clk_source");
 	dss_select_lcd_clk_source(dpi->dss, dpi->output.dispc_channel,
 				  dpi->clk_src);
 
 	dpi->mgr_config.clock_info = ctx.dispc_cinfo;
 
+	DSSDBGLN("dpi.c/dpi_set_pll_clk/SUCCESS");
 	return 0;
 }
 
 static int dpi_set_dispc_clk(struct dpi_data *dpi, unsigned long pck_req)
 {
+	DSSDBGLN("dpi.c/dpi_set_dispc_clk/entry");
 	struct dpi_clk_calc_ctx ctx;
 	int r;
 	bool ok;
 
 	ok = dpi_dss_clk_calc(dpi, pck_req, &ctx);
-	if (!ok)
+	if (!ok){
+		DSSDBGLN("dpi.c/dpi_set_dispc_clk/call/dpi_dss_clk_calc/FAIL");
 		return -EINVAL;
+	}
 
 	r = dss_set_fck_rate(dpi->dss, ctx.fck);
-	if (r)
+	if (r){
+		DSSDBGLN("dpi.c/dpi_set_dispc_clk/call/dss_set_fck_rate/FAIL");
 		return r;
+	}
 
 	dpi->mgr_config.clock_info = ctx.dispc_cinfo;
-
+	
+	DSSDBGLN("dpi.c/dpi_set_dispc_clk/SUCCESS");
 	return 0;
 }
 
 static int dpi_set_mode(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_set_mode/entry");
 	int r;
 
-	if (dpi->pll)
+	if (dpi->pll){
+		DSSDBGLN("dpi.c/dpi_set_mode/call/dpi_set_pll_clk");
 		r = dpi_set_pll_clk(dpi, dpi->pixelclock);
-	else
+	}
+	else{
+		DSSDBGLN("dpi.c/dpi_set_mode/call/dpi_set_dispc_clk");
 		r = dpi_set_dispc_clk(dpi, dpi->pixelclock);
-
+	}
+		
 	return r;
 }
 

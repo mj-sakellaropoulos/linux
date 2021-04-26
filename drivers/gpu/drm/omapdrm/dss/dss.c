@@ -566,19 +566,29 @@ void dss_select_lcd_clk_source(struct dss_device *dss,
 			       enum omap_channel channel,
 			       enum dss_clk_source clk_src)
 {
+	DSSDBGLN("dss.c/dss_select_lcd_clk_source/entry");
+	DSSDBG("dss.c/dss_select_lcd_clk_source/params(*dss,%d,%d)\n", (int)channel, (int)clk_src);
+	
+	DSSDBGLN("dss.c/dss_select_lcd_clk_source/call/dss_get_channel_index");
 	int idx = dss_get_channel_index(channel);
 	int r;
 
 	if (!dss->feat->has_lcd_clk_src) {
+		DSSDBGLN("dss.c/dss_select_lcd_clk_source/call/dss_select_dispc_clk_source");
 		dss_select_dispc_clk_source(dss, clk_src);
+		DSSDBG("dss.c/dss_select_lcd_clk_source/line/579/set dss::lcd_clk_src[%d] to %d\n", idx, (int)clk_src);
 		dss->lcd_clk_source[idx] = clk_src;
 		return;
 	}
 
+	DSSDBGLN("dss.c/dss_select_lcd_clk_source/call/select_lcd_source");
 	r = dss->feat->ops->select_lcd_source(dss, channel, clk_src);
-	if (r)
+	if (r){
+		DSSDBGLN("dss.c/dss_select_lcd_clk_source/call/FAIL");
 		return;
-
+	}
+		
+	DSSDBG("dss.c/dss_select_lcd_clk_source/line/591/set dss::lcd_clk_src[%d] to %d\n", idx, (int)clk_src);
 	dss->lcd_clk_source[idx] = clk_src;
 }
 
@@ -596,12 +606,16 @@ enum dss_clk_source dss_get_dsi_clk_source(struct dss_device *dss,
 enum dss_clk_source dss_get_lcd_clk_source(struct dss_device *dss,
 					   enum omap_channel channel)
 {
+	DSSDBG("dss.c/dss_get_lcd_clk_source/entry\n");
+	DSSDBG("dss.c/dss_get_lcd_clk_source/params(*dss,%d)\n", (int)channel);
 	if (dss->feat->has_lcd_clk_src) {
 		int idx = dss_get_channel_index(channel);
+		DSSDBG("dss.c/dss_get_lcd_clk_source/line/613/get dss::lcd_clk_src[%d]\n", idx);
 		return dss->lcd_clk_source[idx];
 	} else {
 		/* LCD_CLK source is the same as DISPC_FCLK source for
 		 * OMAP2 and OMAP3 */
+		DSSDBGLN("dss.c/dss_get_lcd_clk_source/line/613/return dss->dispc_clk_source");
 		return dss->dispc_clk_source;
 	}
 }

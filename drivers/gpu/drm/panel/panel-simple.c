@@ -593,6 +593,7 @@ static void panel_simple_parse_panel_timing_node(struct device *dev,
 
 static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 {
+	dev_dbg(dev, "panel-simple.c/panel_simple_probe/entry");
 	struct panel_simple *panel;
 	struct display_timing dt;
 	struct device_node *ddc;
@@ -712,24 +713,31 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 	drm_panel_init(&panel->base, dev, &panel_simple_funcs, connector_type);
 
 	err = drm_panel_of_backlight(&panel->base);
-	if (err)
+	if (err){
+		dev_warn(dev, "panel-simple.c/panel_simple_probe/call/drm_panel_of_backlight/FAIL");
 		goto free_ddc;
+	}
 
+	dev_dbg(dev, "panel-simple.c/panel_simple_probe/call/drm_panel_add");
 	drm_panel_add(&panel->base);
 
+	dev_dbg(dev, "panel-simple.c/panel_simple_probe/call/dev_set_drvdata");
 	dev_set_drvdata(dev, panel);
 
+	dev_dbg(dev, "panel-simple.c/panel_simple_probe/SUCCESS/return 0");
 	return 0;
 
 free_ddc:
 	if (panel->ddc)
 		put_device(&panel->ddc->dev);
 
+	dev_dbg(dev, "panel-simple.c/panel_simple_probe/FAIL/return err");
 	return err;
 }
 
 static int panel_simple_remove(struct device *dev)
 {
+	dev_dbg(dev, "panel-simple.c/panel_simple_remove/entry");
 	struct panel_simple *panel = dev_get_drvdata(dev);
 
 	drm_panel_remove(&panel->base);
@@ -744,6 +752,7 @@ static int panel_simple_remove(struct device *dev)
 
 static void panel_simple_shutdown(struct device *dev)
 {
+	dev_dbg(dev, "panel-simple.c/panel_simple_shutdown/entry");
 	struct panel_simple *panel = dev_get_drvdata(dev);
 
 	drm_panel_disable(&panel->base);
