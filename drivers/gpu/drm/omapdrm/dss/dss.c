@@ -388,14 +388,19 @@ static int dss_debug_dump_clocks(struct seq_file *s, void *p)
 
 static int dss_get_channel_index(enum omap_channel channel)
 {
+	DSSDBGLN("dss.c/dss_get_channel_index/entry");
 	switch (channel) {
 	case OMAP_DSS_CHANNEL_LCD:
+		DSSDBGLN("dss.c/dss_get_channel_index/OMAP_DSS_CHANNEL_LCD");
 		return 0;
 	case OMAP_DSS_CHANNEL_LCD2:
+		DSSDBGLN("dss.c/dss_get_channel_index/OMAP_DSS_CHANNEL_LCD2");
 		return 1;
 	case OMAP_DSS_CHANNEL_LCD3:
+		DSSDBGLN("dss.c/dss_get_channel_index/OMAP_DSS_CHANNEL_LCD3");
 		return 2;
 	default:
+		DSSDBGLN("dss.c/dss_get_channel_index/default");
 		WARN_ON(1);
 		return 0;
 	}
@@ -406,6 +411,8 @@ static void dss_select_dispc_clk_source(struct dss_device *dss,
 {
 	int b;
 
+	DSSDBGLN("dss.c/dss_select_dispc_clk_source/entry");
+
 	/*
 	 * We always use PRCM clock as the DISPC func clock, except on DSS3,
 	 * where we don't have separate DISPC and LCD clock sources.
@@ -415,15 +422,19 @@ static void dss_select_dispc_clk_source(struct dss_device *dss,
 
 	switch (clk_src) {
 	case DSS_CLK_SRC_FCK:
+		DSSDBGLN("dss.c/dss_select_dispc_clk_source/DSS_CLK_SRC_FCK");
 		b = 0;
 		break;
 	case DSS_CLK_SRC_PLL1_1:
+		DSSDBGLN("dss.c/dss_select_dispc_clk_source/DSS_CLK_SRC_PLL1_1");
 		b = 1;
 		break;
 	case DSS_CLK_SRC_PLL2_1:
+		DSSDBGLN("dss.c/dss_select_dispc_clk_source/DSS_CLK_SRC_PLL2_1");
 		b = 2;
 		break;
 	default:
+		DSSDBGLN("dss.c/dss_select_dispc_clk_source/default");
 		BUG();
 		return;
 	}
@@ -1192,6 +1203,7 @@ static void __dss_uninit_ports(struct dss_device *dss, unsigned int num_ports)
 
 static int dss_init_ports(struct dss_device *dss)
 {
+	DSSDBGLN("dss.c/dss_probe/dss_init_ports/entry");
 	struct platform_device *pdev = dss->pdev;
 	struct device_node *parent = pdev->dev.of_node;
 	struct device_node *port;
@@ -1205,12 +1217,14 @@ static int dss_init_ports(struct dss_device *dss)
 
 		switch (dss->feat->ports[i]) {
 		case OMAP_DISPLAY_TYPE_DPI:
+			DSSDBGLN("dss.c/dss_probe/dss_init_ports/OMAP_DISPLAY_TYPE_DPI");
 			r = dpi_init_port(dss, pdev, port, dss->feat->model);
 			if (r)
 				goto error;
 			break;
 
 		case OMAP_DISPLAY_TYPE_SDI:
+			DSSDBGLN("dss.c/dss_probe/dss_init_ports/OMAP_DISPLAY_TYPE_SDI");
 			r = sdi_init_port(dss, pdev, port);
 			if (r)
 				goto error;
@@ -1224,6 +1238,7 @@ static int dss_init_ports(struct dss_device *dss)
 	return 0;
 
 error:
+	DSSDBGLN("dss.c/dss_probe/dss_init_ports/error/__dss_uninit_ports");
 	__dss_uninit_ports(dss, i);
 	return r;
 }
@@ -1235,6 +1250,7 @@ static void dss_uninit_ports(struct dss_device *dss)
 
 static int dss_video_pll_probe(struct dss_device *dss)
 {
+	DSSDBGLN("dss.c/dss_probe/dss_video_pll_probe/entry");
 	struct platform_device *pdev = dss->pdev;
 	struct device_node *np = pdev->dev.of_node;
 	struct regulator *pll_regulator;
@@ -1397,6 +1413,7 @@ static int dss_add_child_component(struct device *dev, void *data)
 
 static int dss_probe_hardware(struct dss_device *dss)
 {
+	DSSDBGLN("dss.c/dss_probe_hardware/entry");
 	u32 rev;
 	int r;
 
@@ -1405,10 +1422,13 @@ static int dss_probe_hardware(struct dss_device *dss)
 		return r;
 
 	dss->dss_clk_rate = clk_get_rate(dss->dss_clk);
+	DSSDBG("dss.c/dss_probe_hardware/dss_clk_rate=%lu",dss->dss_clk_rate);
 
 	/* Select DPLL */
 	REG_FLD_MOD(dss, DSS_CONTROL, 0, 0, 0);
 
+	//IMPORTANT:What is this???
+	DSSDBGLN("dss.c/dss_probe_hardware/dss_select_dispc_clk_source(dss, DSS_CLK_SRC_FCK)");
 	dss_select_dispc_clk_source(dss, DSS_CLK_SRC_FCK);
 
 #ifdef CONFIG_OMAP2_DSS_VENC
@@ -1416,6 +1436,8 @@ static int dss_probe_hardware(struct dss_device *dss)
 	REG_FLD_MOD(dss, DSS_CONTROL, 1, 3, 3);	/* venc clock 4x enable */
 	REG_FLD_MOD(dss, DSS_CONTROL, 0, 2, 2);	/* venc clock mode = normal */
 #endif
+
+	DSSDBGLN("dss.c/dss_probe_hardware/set all clk source to FCK uncondtionally");
 	dss->dsi_clk_source[0] = DSS_CLK_SRC_FCK;
 	dss->dsi_clk_source[1] = DSS_CLK_SRC_FCK;
 	dss->dispc_clk_source = DSS_CLK_SRC_FCK;
@@ -1432,6 +1454,7 @@ static int dss_probe_hardware(struct dss_device *dss)
 
 static int dss_probe(struct platform_device *pdev)
 {
+	DSSDBGLN("dss.c/dss_probe/entry");
 	const struct soc_device_attribute *soc;
 	struct dss_component_match_data cmatch;
 	struct component_match *match = NULL;
@@ -1448,6 +1471,7 @@ static int dss_probe(struct platform_device *pdev)
 
 	r = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	if (r) {
+		DSSDBGLN("dss.c/dss_probe/DMAFAIL");
 		dev_err(&pdev->dev, "Failed to set the DMA mask\n");
 		goto err_free_dss;
 	}
@@ -1466,27 +1490,42 @@ static int dss_probe(struct platform_device *pdev)
 	dss_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	dss->base = devm_ioremap_resource(&pdev->dev, dss_mem);
 	if (IS_ERR(dss->base)) {
+		DSSDBGLN("dss.c/dss_probe/IOMAPFAIL");
 		r = PTR_ERR(dss->base);
 		goto err_free_dss;
 	}
 
 	r = dss_get_clocks(dss);
-	if (r)
+	DSSDBGLN("dss.c/dss_probe/dss_get_clocks");
+	if (r){
+		DSSDBGLN("dss.c/dss_probe/dss_get_clocks_FAIL");
 		goto err_free_dss;
+	}
+		
 
 	r = dss_setup_default_clock(dss);
-	if (r)
+	DSSDBGLN("dss.c/dss_probe/dss_setup_default_clock");
+	if (r){
+		DSSDBGLN("dss.c/dss_probe/dss_setup_default_clock_FAIL");
 		goto err_put_clocks;
+	}
+		
 
 	/* Setup the video PLLs and the DPI and SDI ports. */
+	DSSDBGLN("dss.c/dss_probe/dss_video_pll_probe");
 	r = dss_video_pll_probe(dss);
-	if (r)
+	if (r){
+		DSSDBGLN("dss.c/dss_probe/dss_video_pll_probe_FAIL");
 		goto err_put_clocks;
-
+	}
+		
+	DSSDBGLN("dss.c/dss_probe/dss_init_ports");
 	r = dss_init_ports(dss);
-	if (r)
+	if (r){
+		DSSDBGLN("dss.c/dss_probe/dss_init_ports_FAIL");
 		goto err_uninit_plls;
-
+	}
+		
 	/* Enable runtime PM and probe the hardware. */
 	pm_runtime_enable(&pdev->dev);
 
@@ -1522,27 +1561,33 @@ static int dss_probe(struct platform_device *pdev)
 	return 0;
 
 err_of_depopulate:
+	DSSDBGLN("dss.c/dss_probe/err_of_depopulate");
 	of_platform_depopulate(&pdev->dev);
 
 err_uninit_debugfs:
+	DSSDBGLN("dss.c/dss_probe/err_uninit_debugfs");
 	dss_debugfs_remove_file(dss->debugfs.clk);
 	dss_debugfs_remove_file(dss->debugfs.dss);
 	dss_uninitialize_debugfs(dss);
 
 err_pm_runtime_disable:
+	DSSDBGLN("dss.c/dss_probe/err_pm_runtime_disable");
 	pm_runtime_disable(&pdev->dev);
 	dss_uninit_ports(dss);
 
 err_uninit_plls:
+	DSSDBGLN("dss.c/dss_probe/err_uninit_plls");
 	if (dss->video1_pll)
 		dss_video_pll_uninit(dss->video1_pll);
 	if (dss->video2_pll)
 		dss_video_pll_uninit(dss->video2_pll);
 
 err_put_clocks:
+	DSSDBGLN("dss.c/dss_probe/err_put_clocks");
 	dss_put_clocks(dss);
 
 err_free_dss:
+	DSSDBGLN("dss.c/dss_probe/err_free_dss");
 	kfree(dss);
 
 	return r;
