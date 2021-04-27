@@ -451,22 +451,31 @@ static int dpi_verify_pll(struct dss_pll *pll)
 
 static void dpi_init_pll(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_init_pll/entry");
 	struct dss_pll *pll;
 
-	if (dpi->pll)
+	if (dpi->pll){
+		DSSDBGLN("dpi.c/dpi_init_pll/PLL ALREADY PRESENT");
 		return;
-
+	}
+		
+	DSSDBGLN("dpi.c/dpi_init_pll/call/dpi_get_clk_src");
 	dpi->clk_src = dpi_get_clk_src(dpi);
 
+	DSSDBGLN("dpi.c/dpi_init_pll/call/dss_pll_find_by_src");
 	pll = dss_pll_find_by_src(dpi->dss, dpi->clk_src);
-	if (!pll)
+	if (!pll){
+		DSSDBGLN("dpi.c/dpi_init_pll/call/dss_pll_find_by_src/PLL NOT FOUND");
 		return;
-
+	}
+		
+	DSSDBGLN("dpi.c/dpi_init_pll/call/dpi_verify_pll");
 	if (dpi_verify_pll(pll)) {
 		DSSWARN("PLL not operational\n");
 		return;
 	}
 
+	DSSDBG("dpi.c/dpi_init_pll/SUCCESS/DPI SET PLL TO PLL ID %d\n", (int)pll->id);
 	dpi->pll = pll;
 }
 

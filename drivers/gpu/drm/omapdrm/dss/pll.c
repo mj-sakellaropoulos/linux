@@ -27,21 +27,28 @@
 
 int dss_pll_register(struct dss_device *dss, struct dss_pll *pll)
 {
+	DSSDBGLN("pll.c/dss_pll_register/entry");
+	DSSDBG("pll.c/dss_pll_register/params(dss, pll : dss_pll_id is (%d))",(int)pll->id);
+
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(dss->plls); ++i) {
-		if (!dss->plls[i]) {
-			dss->plls[i] = pll;
-			pll->dss = dss;
+	for (i = 0; i < ARRAY_SIZE(dss->plls); ++i) { //for i , i less than 4, ++i , seq = {1,2,3}   //why is the first pll slot ignored? Why is it setting all the slots to the same value?
+		if (!dss->plls[i]) {                      //    if pll not present at i
+			dss->plls[i] = pll;                   //        set plls[i] to param pll
+			pll->dss = dss;                       //        set param pll dss reference do current dss device
+			DSSDBG("pll.c/dss_pll_register/dss->plls[%d] = pll/ dss_pll_id is (%d)", i, (int)pll->id);
 			return 0;
 		}
 	}
 
+	DSSDBGLN("pll.c/dss_pll_register/FAILED");
 	return -EBUSY;
 }
 
 void dss_pll_unregister(struct dss_pll *pll)
 {
+	DSSDBGLN("pll.c/dss_pll_unregister/entry");
+	DSSDBG("pll.c/dss_pll_unregister/params(pll with dss_pll_id of %d)\n", (int)pll->id);
 	struct dss_device *dss = pll->dss;
 	int i;
 
@@ -49,49 +56,69 @@ void dss_pll_unregister(struct dss_pll *pll)
 		if (dss->plls[i] == pll) {
 			dss->plls[i] = NULL;
 			pll->dss = NULL;
+			DSSDBG("pll.c/dss_pll_unregister/UNREGISTERED PLL WITH dss_pll_id OF %d\n", (int)pll->id);
 			return;
 		}
 	}
+
+	DSSDBG("pll.c/dss_pll_unregister/exit/PLL WITH dss_pll_id OF %d was NOT unregistered\n", (int)pll->id);
 }
 
 struct dss_pll *dss_pll_find(struct dss_device *dss, const char *name)
 {
+	DSSDBGLN("pll.c/dss_pll_find/entry");
+	DSSDBG("pll.c/dss_pll_find/params(dss, NAME=%s)\n", name);
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(dss->plls); ++i) {
 		if (dss->plls[i] && strcmp(dss->plls[i]->name, name) == 0)
+			DSSDBG("pll.c/dss_pll_find/FOUND PLL dss->plls[%d]\n", i);
 			return dss->plls[i];
 	}
 
+	DSSDBGLN("pll.c/dss_pll_find/PLL NOT FOUND");
 	return NULL;
 }
 
 struct dss_pll *dss_pll_find_by_src(struct dss_device *dss,
 				    enum dss_clk_source src)
 {
+	DSSDBGLN("pll.c/dss_pll_find_by_src/entry");
+	DSSDBG("pll.c/dss_pll_find_by_src/params(*dss, src=%d)\n", (int)src);
+
 	struct dss_pll *pll;
 
 	switch (src) {
 	default:
 	case DSS_CLK_SRC_FCK:
+		DSSDBGLN("pll.c/dss_pll_find_by_src/DSS_CLK_SRC_FCK");
 		return NULL;
 
 	case DSS_CLK_SRC_HDMI_PLL:
+		DSSDBGLN("pll.c/dss_pll_find_by_src/DSS_CLK_SRC_HDMI_PLL");
+		DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, hdmi)");
 		return dss_pll_find(dss, "hdmi");
 
 	case DSS_CLK_SRC_PLL1_1:
 	case DSS_CLK_SRC_PLL1_2:
 	case DSS_CLK_SRC_PLL1_3:
+		DSSDBGLN("pll.c/dss_pll_find_by_src/DSS_CLK_SRC_PLL1_1|DSS_CLK_SRC_PLL1_2|DSS_CLK_SRC_PLL1_3");
+		DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, dsi0)");
 		pll = dss_pll_find(dss, "dsi0");
-		if (!pll)
+		if (!pll){
+			DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, video0)");
 			pll = dss_pll_find(dss, "video0");
+		}
 		return pll;
 
 	case DSS_CLK_SRC_PLL2_1:
 	case DSS_CLK_SRC_PLL2_2:
 	case DSS_CLK_SRC_PLL2_3:
+		DSSDBGLN("pll.c/dss_pll_find_by_src/DSS_CLK_SRC_PLL2_1|DSS_CLK_SRC_PLL2_2|DSS_CLK_SRC_PLL2_3");
+		DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, dsi1)");
 		pll = dss_pll_find(dss, "dsi1");
 		if (!pll)
+			DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, video1)");
 			pll = dss_pll_find(dss, "video1");
 		return pll;
 	}
@@ -99,61 +126,83 @@ struct dss_pll *dss_pll_find_by_src(struct dss_device *dss,
 
 unsigned int dss_pll_get_clkout_idx_for_src(enum dss_clk_source src)
 {
+	DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/entry");
 	switch (src) {
 	case DSS_CLK_SRC_HDMI_PLL:
+		DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/DSS_CLK_SRC_HDMI_PLL");
 		return 0;
 
-	case DSS_CLK_SRC_PLL1_1:
+	case DSS_CLK_SRC_PLL1_1: //This seems suspicious ?
 	case DSS_CLK_SRC_PLL2_1:
+		DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/DSS_CLK_SRC_PLL1_1|DSS_CLK_SRC_PLL2_1");
 		return 0;
 
 	case DSS_CLK_SRC_PLL1_2:
 	case DSS_CLK_SRC_PLL2_2:
+		DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/DSS_CLK_SRC_PLL1_2|DSS_CLK_SRC_PLL2_2");
 		return 1;
 
 	case DSS_CLK_SRC_PLL1_3:
 	case DSS_CLK_SRC_PLL2_3:
+		DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/DSS_CLK_SRC_PLL1_3|DSS_CLK_SRC_PLL2_3");
 		return 2;
 
 	default:
+		DSSDBGLN("pll.c/dss_pll_get_clkout_idx_for_src/default");
 		return 0;
 	}
 }
 
 int dss_pll_enable(struct dss_pll *pll)
 {
+	DSSDBGLN("pll.c/dss_pll_enable/entry");
+	DSSDBG("pll.c/dss_pll_enable/params(pll , id=%d)", pll->id);
 	int r;
 
+	DSSDBGLN("pll.c/dss_pll_enable/call/clk_prepare_enable");
 	r = clk_prepare_enable(pll->clkin);
-	if (r)
+	if (r){
+		DSSDBGLN("pll.c/dss_pll_enable/call/clk_prepare_enable/FAILED");
 		return r;
-
-	if (pll->regulator) {
-		r = regulator_enable(pll->regulator);
-		if (r)
-			goto err_reg;
 	}
 
-	r = pll->ops->enable(pll);
-	if (r)
-		goto err_enable;
+	if (pll->regulator) {
+		DSSDBGLN("pll.c/dss_pll_enable/call/regulator_enable");
+		r = regulator_enable(pll->regulator);
+		if (r){
+			DSSDBGLN("pll.c/dss_pll_enable/call/regulator_enable/FAILED");
+			goto err_reg;
+		}
+	}
 
+	DSSDBG("pll.c/dss_pll_enable/call/pll->ops->enable(%d)\n", (int)pll->id);
+	r = pll->ops->enable(pll);
+	if (r){
+		DSSDBG("pll.c/dss_pll_enable/call/pll->ops->enable(%d)/FAILED\n", (int)pll->id);
+		goto err_enable;
+	}
+
+	DSSDBGLN("pll.c/dss_pll_enable/SUCCESS");
 	return 0;
 
 err_enable:
+	DSSDBGLN("pll.c/dss_pll_enable/goto/err_enable");
 	if (pll->regulator)
 		regulator_disable(pll->regulator);
 err_reg:
+	DSSDBGLN("pll.c/dss_pll_enable/goto/err_reg");
 	clk_disable_unprepare(pll->clkin);
 	return r;
 }
 
 void dss_pll_disable(struct dss_pll *pll)
 {
+	DSSDBG("pll.c/dss_pll_disable/id=%d\n",(int)pll->id);
 	pll->ops->disable(pll);
 
-	if (pll->regulator)
+	if (pll->regulator){
 		regulator_disable(pll->regulator);
+	}
 
 	clk_disable_unprepare(pll->clkin);
 
@@ -162,14 +211,18 @@ void dss_pll_disable(struct dss_pll *pll)
 
 int dss_pll_set_config(struct dss_pll *pll, const struct dss_pll_clock_info *cinfo)
 {
+	DSSDBGLN("pll.c/dss_pll_set_config/entry");
 	int r;
 
 	r = pll->ops->set_config(pll, cinfo);
-	if (r)
+	if (r){
+		DSSDBGLN("pll.c/call/pll->ops->set_config/FAILED");
 		return r;
+	}
 
 	pll->cinfo = *cinfo;
 
+	DSSDBGLN("pll.c/dss_pll_set_config/SUCCESS");
 	return 0;
 }
 
@@ -177,6 +230,7 @@ bool dss_pll_hsdiv_calc_a(const struct dss_pll *pll, unsigned long clkdco,
 		unsigned long out_min, unsigned long out_max,
 		dss_hsdiv_calc_func func, void *data)
 {
+	DSSDBGLN("pll.c/dss_pll_hsdiv_calc_a/entry");
 	const struct dss_pll_hw *hw = pll->hw;
 	int m, m_start, m_stop;
 	unsigned long out;
@@ -191,10 +245,14 @@ bool dss_pll_hsdiv_calc_a(const struct dss_pll *pll, unsigned long clkdco,
 	for (m = m_start; m <= m_stop; ++m) {
 		out = clkdco / m;
 
-		if (func(m, out, data))
+		if (func(m, out, data)){
+			DSSDBGLN("pll.c/dss_pll_hsdiv_calc_a/SUCCESS");
 			return true;
+		}
+			
 	}
 
+	DSSDBGLN("pll.c/dss_pll_hsdiv_calc_a/FAILED");
 	return false;
 }
 
@@ -206,6 +264,7 @@ bool dss_pll_calc_a(const struct dss_pll *pll, unsigned long clkin,
 		unsigned long pll_min, unsigned long pll_max,
 		dss_pll_calc_func func, void *data)
 {
+	DSSDBGLN("pll.c/dss_pll_calc_a/entry");
 	const struct dss_pll_hw *hw = pll->hw;
 	int n, n_start, n_stop, n_inc;
 	int m, m_start, m_stop, m_inc;
@@ -225,10 +284,14 @@ bool dss_pll_calc_a(const struct dss_pll *pll, unsigned long clkin,
 	if (n_start > n_stop)
 		return false;
 
+	DSSDBGLN("pll.c/dss_pll_calc_a/line/287/ok");
+
 	if (hw->errata_i886) {
 		swap(n_start, n_stop);
 		n_inc = -1;
 	}
+
+	DSSDBGLN("pll.c/dss_pll_calc_a/line/294/ok");
 
 	pll_max = pll_max ? pll_max : ULONG_MAX;
 
@@ -258,6 +321,7 @@ bool dss_pll_calc_a(const struct dss_pll *pll, unsigned long clkin,
 		}
 	}
 
+	DSSDBGLN("pll.c/dss_pll_calc_a/line/324/FAILED");
 	return false;
 }
 
@@ -272,6 +336,7 @@ bool dss_pll_calc_a(const struct dss_pll *pll, unsigned long clkin,
 bool dss_pll_calc_b(const struct dss_pll *pll, unsigned long clkin,
 	unsigned long target_clkout, struct dss_pll_clock_info *cinfo)
 {
+	DSSDBGLN("pll.c/dss_pll_calc_b/entry");
 	unsigned long fint, clkdco, clkout;
 	unsigned long target_clkdco;
 	unsigned long min_dco;
@@ -323,11 +388,13 @@ bool dss_pll_calc_b(const struct dss_pll *pll, unsigned long clkin,
 	cinfo->clkdco = clkdco;
 	cinfo->clkout[0] = clkout;
 
+	DSSDBGLN("pll.c/dss_pll_calc_b/SUCCESS (single exit)");
 	return true;
 }
 
 static int wait_for_bit_change(void __iomem *reg, int bitnum, int value)
 {
+	DSSDBGLN("pll.c/wait_for_bit_change/entry");
 	unsigned long timeout;
 	ktime_t wait;
 	int t;
@@ -355,6 +422,7 @@ static int wait_for_bit_change(void __iomem *reg, int bitnum, int value)
 
 int dss_pll_wait_reset_done(struct dss_pll *pll)
 {
+	DSSDBGLN("pll.c/dss_pll_wait_reset_done/entry");
 	void __iomem *base = pll->base;
 
 	if (wait_for_bit_change(base + PLL_STATUS, 0, 1) != 1)
@@ -365,6 +433,7 @@ int dss_pll_wait_reset_done(struct dss_pll *pll)
 
 static int dss_wait_hsdiv_ack(struct dss_pll *pll, u32 hsdiv_ack_mask)
 {
+	DSSDBGLN("pll.c/dss_wait_hsdiv_ack/entry");
 	int t = 100;
 
 	while (t-- > 0) {
@@ -396,6 +465,7 @@ static bool pll_is_locked(u32 stat)
 int dss_pll_write_config_type_a(struct dss_pll *pll,
 		const struct dss_pll_clock_info *cinfo)
 {
+	DSSDBGLN("pll.c/dss_pll_write_config_type_a/entry");
 	const struct dss_pll_hw *hw = pll->hw;
 	void __iomem *base = pll->base;
 	int r = 0;
