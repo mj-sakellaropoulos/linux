@@ -1267,18 +1267,21 @@ static void dss_uninit_ports(struct dss_device *dss)
 
 static int dss_video_pll_probe(struct dss_device *dss)
 {
-	DSSDBGLN("dss.c/dss_probe/dss_video_pll_probe/entry");
+	DSSDBGLN("dss.c/dss_video_pll_probe/entry");
 	struct platform_device *pdev = dss->pdev;
 	struct device_node *np = pdev->dev.of_node;
 	struct regulator *pll_regulator;
 	int r;
 
-	if (!np)
+	if (!np){
+		DSSDBGLN("dss.c/dss_video_pll_probe/of_node not found");
 		return 0;
+	}
 
 	if (of_property_read_bool(np, "syscon-pll-ctrl")) {
 		dss->syscon_pll_ctrl = syscon_regmap_lookup_by_phandle(np,
 			"syscon-pll-ctrl");
+		DSSDBGLN("dss.c/dss_video_pll_probe/syscon-pll-ctrl=true");
 		if (IS_ERR(dss->syscon_pll_ctrl)) {
 			dev_err(&pdev->dev,
 				"failed to get syscon-pll-ctrl regmap\n");
@@ -1293,8 +1296,10 @@ static int dss_video_pll_probe(struct dss_device *dss)
 		}
 	}
 
+	DSSDBGLN("dss.c/dss_video_pll_probe/call/devm_regulator_get");
 	pll_regulator = devm_regulator_get(&pdev->dev, "vdda_video");
 	if (IS_ERR(pll_regulator)) {
+		DSSDBGLN("dss.c/dss_video_pll_probe/call/devm_regulator_get/pll_regulator IS ERR");
 		r = PTR_ERR(pll_regulator);
 
 		switch (r) {
@@ -1311,22 +1316,34 @@ static int dss_video_pll_probe(struct dss_device *dss)
 		}
 	}
 
+	DSSDBGLN("dss.c/dss_video_pll_probe/call/of_property_match_string");
 	if (of_property_match_string(np, "reg-names", "pll1") >= 0) {
-		dss->video1_pll = dss_video_pll_init(dss, pdev, 0,
-						     pll_regulator);
-		if (IS_ERR(dss->video1_pll))
+
+		DSSDBGLN("dss.c/dss_video_pll_probe/call/dss_video_pll_init/video1_pll");
+
+		dss->video1_pll = dss_video_pll_init(dss, pdev, 0, pll_regulator);
+		
+		if (IS_ERR(dss->video1_pll)){
+			DSSDBGLN("dss.c/dss_video_pll_probe/video1_pll IS ERR");
 			return PTR_ERR(dss->video1_pll);
+		}
 	}
 
 	if (of_property_match_string(np, "reg-names", "pll2") >= 0) {
-		dss->video2_pll = dss_video_pll_init(dss, pdev, 1,
-						     pll_regulator);
+
+		DSSDBGLN("dss.c/dss_video_pll_probe/call/dss_video_pll_init/video2_pll");
+
+		dss->video2_pll = dss_video_pll_init(dss, pdev, 1, pll_regulator);
+
 		if (IS_ERR(dss->video2_pll)) {
+			DSSDBGLN("dss.c/dss_video_pll_probe/video2_pll IS ERR");
+			DSSDBGLN("dss.c/dss_video_pll_probe/call/dss_video_pll_init/call/dss_video_pll_uninit/video1_pll");
 			dss_video_pll_uninit(dss->video1_pll);
 			return PTR_ERR(dss->video2_pll);
 		}
 	}
 
+	DSSDBGLN("dss.c/dss_video_pll_probe/SUCCESS");
 	return 0;
 }
 
@@ -1350,14 +1367,17 @@ static const struct soc_device_attribute dss_soc_devices[] = {
 
 static int dss_bind(struct device *dev)
 {
+	DSSDBGLN("dss.c/dss_bind/entry");
 	struct dss_device *dss = dev_get_drvdata(dev);
 	struct platform_device *drm_pdev;
 	struct dss_pdata pdata;
 	int r;
 
 	r = component_bind_all(dev, NULL);
-	if (r)
+	if (r){
+		DSSDBGLN("dss.c/dss_bind/call/component_bind_all/FAILED");
 		return r;
+	}
 
 	pm_set_vt_switch(0);
 
@@ -1365,12 +1385,14 @@ static int dss_bind(struct device *dev)
 	drm_pdev = platform_device_register_data(NULL, "omapdrm", 0,
 						 &pdata, sizeof(pdata));
 	if (IS_ERR(drm_pdev)) {
+		DSSDBGLN("dss.c/dss_bind/FAILED/drm_pdev IS ERR");
 		component_unbind_all(dev, NULL);
 		return PTR_ERR(drm_pdev);
 	}
 
 	dss->drm_pdev = drm_pdev;
 
+	DSSDBGLN("dss.c/dss_bind/SUCCESS");
 	return 0;
 }
 
@@ -1550,10 +1572,14 @@ static int dss_probe(struct platform_device *pdev)
 	if (r)
 		goto err_pm_runtime_disable;
 
+	DSSDBGLN("dss.c/dss_probe/call/dss_probe_hardware/ok");
+
 	/* Initialize debugfs. */
 	r = dss_initialize_debugfs(dss);
 	if (r)
 		goto err_pm_runtime_disable;
+
+	DSSDBGLN("dss.c/dss_probe/call/dss_initialize_debugfs/ok");
 
 	dss->debugfs.clk = dss_debugfs_create_file(dss, "clk",
 						   dss_debug_dump_clocks, dss);
@@ -1565,6 +1591,8 @@ static int dss_probe(struct platform_device *pdev)
 	if (r)
 		goto err_uninit_debugfs;
 
+	DSSDBGLN("dss.c/dss_probe/call/of_platform_populate/ok");
+
 	omapdss_gather_components(&pdev->dev);
 
 	cmatch.dev = &pdev->dev;
@@ -1575,6 +1603,9 @@ static int dss_probe(struct platform_device *pdev)
 	if (r)
 		goto err_of_depopulate;
 
+	DSSDBGLN("dss.c/dss_probe/call/component_master_add_with_match/ok");
+
+	DSSDBGLN("dss.c/dss_probe/SUCCESS");
 	return 0;
 
 err_of_depopulate:
@@ -1612,6 +1643,7 @@ err_free_dss:
 
 static int dss_remove(struct platform_device *pdev)
 {
+	DSSDBGLN("dss.c/dss_remove/entry");
 	struct dss_device *dss = platform_get_drvdata(pdev);
 
 	of_platform_depopulate(&pdev->dev);
@@ -1646,6 +1678,7 @@ static void dss_shutdown(struct platform_device *pdev)
 
 static int dss_runtime_suspend(struct device *dev)
 {
+	DSSDBGLN("dss_runtime_suspend");
 	struct dss_device *dss = dev_get_drvdata(dev);
 
 	dss_save_context(dss);
@@ -1658,6 +1691,7 @@ static int dss_runtime_suspend(struct device *dev)
 
 static int dss_runtime_resume(struct device *dev)
 {
+	DSSDBGLN("dss_runtime_resume");
 	struct dss_device *dss = dev_get_drvdata(dev);
 	int r;
 
