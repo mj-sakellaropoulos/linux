@@ -593,7 +593,7 @@ static void panel_simple_parse_panel_timing_node(struct device *dev,
 
 static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 {
-	dev_dbg(dev, "panel-simple.c/panel_simple_probe/entry");
+	dev_info(dev, "panel-simple.c/panel_simple_probe/entry");
 	struct panel_simple *panel;
 	struct display_timing dt;
 	struct device_node *ddc;
@@ -718,26 +718,26 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 		goto free_ddc;
 	}
 
-	dev_dbg(dev, "panel-simple.c/panel_simple_probe/call/drm_panel_add");
+	dev_warn(dev, "panel-simple.c/panel_simple_probe/call/drm_panel_add");
 	drm_panel_add(&panel->base);
 
-	dev_dbg(dev, "panel-simple.c/panel_simple_probe/call/dev_set_drvdata");
+	dev_warn(dev, "panel-simple.c/panel_simple_probe/call/dev_set_drvdata");
 	dev_set_drvdata(dev, panel);
 
-	dev_dbg(dev, "panel-simple.c/panel_simple_probe/SUCCESS/return 0");
+	dev_warn(dev, "panel-simple.c/panel_simple_probe/SUCCESS/return 0");
 	return 0;
 
 free_ddc:
 	if (panel->ddc)
 		put_device(&panel->ddc->dev);
 
-	dev_dbg(dev, "panel-simple.c/panel_simple_probe/FAIL/return err");
+	dev_info(dev, "panel-simple.c/panel_simple_probe/FAIL/return err");
 	return err;
 }
 
 static int panel_simple_remove(struct device *dev)
 {
-	dev_dbg(dev, "panel-simple.c/panel_simple_remove/entry");
+	dev_info(dev, "panel-simple.c/panel_simple_remove/entry");
 	struct panel_simple *panel = dev_get_drvdata(dev);
 
 	drm_panel_remove(&panel->base);
@@ -752,7 +752,7 @@ static int panel_simple_remove(struct device *dev)
 
 static void panel_simple_shutdown(struct device *dev)
 {
-	dev_dbg(dev, "panel-simple.c/panel_simple_shutdown/entry");
+	dev_info(dev, "panel-simple.c/panel_simple_shutdown/entry");
 	struct panel_simple *panel = dev_get_drvdata(dev);
 
 	drm_panel_disable(&panel->base);
@@ -2236,6 +2236,7 @@ static const struct panel_desc hydis_hv070ws1_105 = {
 	},
 	.connector_type = DRM_MODE_CONNECTOR_DPI,
 	.bus_format = MEDIA_BUS_FMT_RBG888_1X24,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH | DRM_BUS_FLAG_PIXDATA_SAMPLE_NEGEDGE,
 };
 
 static const struct drm_display_mode innolux_at043tn24_mode = {

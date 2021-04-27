@@ -380,6 +380,8 @@ static int dpi_set_mode(struct dpi_data *dpi)
 	DSSDBGLN("dpi.c/dpi_set_mode/entry");
 	int r;
 
+	//dpi_init_pll(dpi); //hack, force pll init
+
 	if (dpi->pll){
 		DSSDBGLN("dpi.c/dpi_set_mode/call/dpi_set_pll_clk");
 		r = dpi_set_pll_clk(dpi, dpi->pixelclock);
@@ -475,13 +477,18 @@ static void dpi_init_pll(struct dpi_data *dpi)
 static int dpi_bridge_attach(struct drm_bridge *bridge,
 			     enum drm_bridge_attach_flags flags)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_attach/entry");
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
 
-	if (!(flags & DRM_BRIDGE_ATTACH_NO_CONNECTOR))
+	if (!(flags & DRM_BRIDGE_ATTACH_NO_CONNECTOR)){
+		DSSDBGLN("dpi.c/dpi_bridge_attach/line/484/NO_CONNECTOR_FAIL");
 		return -EINVAL;
-
+	}
+		
+	DSSDBGLN("dpi.c/dpi_bridge_attach/call/dpi_init_pll");
 	dpi_init_pll(dpi);
 
+	DSSDBGLN("dpi.c/dpi_bridge_attach/return/call/drm_bridge_attach");
 	return drm_bridge_attach(bridge->encoder, dpi->output.next_bridge,
 				 bridge, flags);
 }
@@ -491,19 +498,29 @@ dpi_bridge_mode_valid(struct drm_bridge *bridge,
 		       const struct drm_display_info *info,
 		       const struct drm_display_mode *mode)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_mode_valid/entry");
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
 	unsigned long clock = mode->clock * 1000;
 	int ret;
 
-	if (mode->hdisplay % 8 != 0)
+	if (mode->hdisplay % 8 != 0){
+		DSSDBGLN("dpi.c/dpi_bridge_mode_valid/FAIL/MODE_BAD_WIDTH");
 		return MODE_BAD_WIDTH;
+	}
 
-	if (mode->clock == 0)
+	if (mode->clock == 0){
+		DSSDBGLN("dpi.c/dpi_bridge_mode_valid/FAIL/MODE_NOCLOCK");
 		return MODE_NOCLOCK;
+	}
 
+	DSSDBGLN("dpi.c/dpi_bridge_mode_valid/call/dpi_clock_update");
 	ret = dpi_clock_update(dpi, &clock);
-	if (ret < 0)
+	if (ret < 0){
+		DSSDBGLN("dpi.c/dpi_bridge_mode_valid/FAIL/MODE_CLOCK_RANGE");
 		return MODE_CLOCK_RANGE;
+	}
+
+	DSSDBGLN("dpi.c/dpi_bridge_mode_valid/SUCCESS/MODE_OK");
 
 	return MODE_OK;
 }
@@ -512,16 +529,20 @@ static bool dpi_bridge_mode_fixup(struct drm_bridge *bridge,
 				   const struct drm_display_mode *mode,
 				   struct drm_display_mode *adjusted_mode)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_mode_fixup/entry");
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
 	unsigned long clock = mode->clock * 1000;
 	int ret;
 
 	ret = dpi_clock_update(dpi, &clock);
-	if (ret < 0)
+	if (ret < 0){
+		DSSDBGLN("dpi.c/dpi_bridge_mode_fixup/call/dpi_clock_update/FAIL/return false");
 		return false;
+	}
 
 	adjusted_mode->clock = clock / 1000;
 
+	DSSDBGLN("dpi.c/dpi_bridge_mode_fixup/SUCESS/adjusted mode clock DIV by 1000");
 	return true;
 }
 
@@ -530,43 +551,53 @@ static void dpi_bridge_mode_set(struct drm_bridge *bridge,
 				 const struct drm_display_mode *adjusted_mode)
 {
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
-
+	DSSDBGLN("dpi.c/dpi_bridge_mode_set/entry/adjusted mode clock MULT by 1000");
 	dpi->pixelclock = adjusted_mode->clock * 1000;
 }
 
 static void dpi_bridge_enable(struct drm_bridge *bridge)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_enable/entry");
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
 	int r;
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/Enable dsi reg if needed");
 	if (dpi->vdds_dsi_reg) {
 		r = regulator_enable(dpi->vdds_dsi_reg);
 		if (r)
 			return;
 	}
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/call/dispc_runtime_get/(dpi->dss->dispc)");
 	r = dispc_runtime_get(dpi->dss->dispc);
 	if (r)
 		goto err_get_dispc;
 
+	DSSDBG("dpi.c/dpi_bridge_enable/call/dss_dpi_select_source/DSS,PORT=%d,CHANNEL=%d\n", dpi->id, (int)dpi->output.dispc_channel);
 	r = dss_dpi_select_source(dpi->dss, dpi->id, dpi->output.dispc_channel);
 	if (r)
 		goto err_src_sel;
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/line/581/enable pll if present");
 	if (dpi->pll) {
 		r = dss_pll_enable(dpi->pll);
 		if (r)
 			goto err_pll_init;
+	}else{
+		DSSDBGLN("dpi.c/dpi_bridge_enable/line/581/PLL NOT PRESENT");
 	}
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/call/dpi_set_mode");
 	r = dpi_set_mode(dpi);
 	if (r)
 		goto err_set_mode;
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/call/dpi_config_lcd_manager");
 	dpi_config_lcd_manager(dpi);
 
 	mdelay(2);
 
+	DSSDBGLN("dpi.c/dpi_bridge_enable/call/dss_mgr_enable");
 	r = dss_mgr_enable(&dpi->output);
 	if (r)
 		goto err_mgr_enable;
@@ -574,19 +605,25 @@ static void dpi_bridge_enable(struct drm_bridge *bridge)
 	return;
 
 err_mgr_enable:
+	DSSDBGLN("dpi.c/dpi_bridge_enable/GOTO_FAIL/err_mgr_enable");
 err_set_mode:
+	DSSDBGLN("dpi.c/dpi_bridge_enable/GOTO_FAIL/err_set_mode");
 	if (dpi->pll)
 		dss_pll_disable(dpi->pll);
 err_pll_init:
+	DSSDBGLN("dpi.c/dpi_bridge_enable/GOTO_FAIL/err_pll_init");
 err_src_sel:
+	DSSDBGLN("dpi.c/dpi_bridge_enable/GOTO_FAIL/err_src_sel");
 	dispc_runtime_put(dpi->dss->dispc);
 err_get_dispc:
+	DSSDBGLN("dpi.c/dpi_bridge_enable/GOTO_FAIL/err_get_dispc");
 	if (dpi->vdds_dsi_reg)
 		regulator_disable(dpi->vdds_dsi_reg);
 }
 
 static void dpi_bridge_disable(struct drm_bridge *bridge)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_disable/entry");
 	struct dpi_data *dpi = drm_bridge_to_dpi(bridge);
 
 	dss_mgr_disable(&dpi->output);
@@ -601,6 +638,7 @@ static void dpi_bridge_disable(struct drm_bridge *bridge)
 
 	if (dpi->vdds_dsi_reg)
 		regulator_disable(dpi->vdds_dsi_reg);
+	DSSDBGLN("dpi.c/dpi_bridge_disable/exit");
 }
 
 static const struct drm_bridge_funcs dpi_bridge_funcs = {
@@ -614,6 +652,7 @@ static const struct drm_bridge_funcs dpi_bridge_funcs = {
 
 static void dpi_bridge_init(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_init/entry");
 	dpi->bridge.funcs = &dpi_bridge_funcs;
 	dpi->bridge.of_node = dpi->pdev->dev.of_node;
 	dpi->bridge.type = DRM_MODE_CONNECTOR_DPI;
@@ -623,6 +662,7 @@ static void dpi_bridge_init(struct dpi_data *dpi)
 
 static void dpi_bridge_cleanup(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_bridge_cleanup/entry");
 	drm_bridge_remove(&dpi->bridge);
 }
 
@@ -638,26 +678,33 @@ static void dpi_bridge_cleanup(struct dpi_data *dpi)
  */
 static enum omap_channel dpi_get_channel(struct dpi_data *dpi)
 {
+	DSSDBGLN("dpi.c/dpi_get_channel/entry");
 	switch (dpi->dss_model) {
 	case DSS_MODEL_OMAP2:
 	case DSS_MODEL_OMAP3:
+		DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_OMAP2_DSS_MODEL_OMAP3/OMAP_DSS_CHANNEL_LCD");
 		return OMAP_DSS_CHANNEL_LCD;
 
 	case DSS_MODEL_DRA7:
 		switch (dpi->id) {
 		case 2:
+			DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_DRA7/DSS_MODEL_DRA7");
 			return OMAP_DSS_CHANNEL_LCD3;
 		case 1:
+			DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_DRA7/OMAP_DSS_CHANNEL_LCD2");
 			return OMAP_DSS_CHANNEL_LCD2;
 		case 0:
 		default:
+			DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_DRA7/OMAP_DSS_CHANNEL_LCD");
 			return OMAP_DSS_CHANNEL_LCD;
 		}
 
 	case DSS_MODEL_OMAP4:
+		DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_OMAP4/OMAP_DSS_CHANNEL_LCD2");
 		return OMAP_DSS_CHANNEL_LCD2;
 
 	case DSS_MODEL_OMAP5:
+		DSSDBGLN("dpi.c/dpi_get_channel/DSS_MODEL_OMAP5/OMAP_DSS_CHANNEL_LCD3");
 		return OMAP_DSS_CHANNEL_LCD3;
 
 	default:
@@ -718,6 +765,7 @@ static int dpi_init_output_port(struct dpi_data *dpi, struct device_node *port)
 
 static void dpi_uninit_output_port(struct device_node *port)
 {
+	DSSDBGLN("dpi.c/dpi_uninit_output_port/entry");
 	struct dpi_data *dpi = port->data;
 	struct omap_dss_device *out = &dpi->output;
 
@@ -814,10 +862,12 @@ int dpi_init_port(struct dss_device *dss, struct platform_device *pdev,
 
 void dpi_uninit_port(struct device_node *port)
 {
+	DSSDBGLN("dpi.c/dpi_uninit_port/entry");
 	struct dpi_data *dpi = port->data;
 
 	if (!dpi)
 		return;
 
+	DSSDBGLN("dpi.c/dpi_uninit_port/call/dpi_uninit_output_port");
 	dpi_uninit_output_port(port);
 }

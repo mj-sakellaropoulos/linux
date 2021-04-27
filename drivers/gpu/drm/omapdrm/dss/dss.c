@@ -1192,6 +1192,7 @@ static const struct dss_features dra7xx_dss_feats = {
 
 static void __dss_uninit_ports(struct dss_device *dss, unsigned int num_ports)
 {
+	DSSDBGLN("dss.c/dss_probe/__dss_uninit_ports/entry");
 	struct platform_device *pdev = dss->pdev;
 	struct device_node *parent = pdev->dev.of_node;
 	struct device_node *port;
@@ -1245,10 +1246,12 @@ static int dss_init_ports(struct dss_device *dss)
 			break;
 
 		default:
+			DSSDBGLN("dss.c/dss_probe/dss_init_ports/default");
 			break;
 		}
 	}
 
+	DSSDBGLN("dss.c/dss_probe/dss_init_ports/NO PORTS");
 	return 0;
 
 error:
@@ -1454,7 +1457,7 @@ static int dss_probe_hardware(struct dss_device *dss)
 	DSSDBGLN("dss.c/dss_probe_hardware/set all clk source to FCK uncondtionally");
 	dss->dsi_clk_source[0] = DSS_CLK_SRC_FCK;
 	dss->dsi_clk_source[1] = DSS_CLK_SRC_FCK;
-	dss->dispc_clk_source = DSS_CLK_SRC_FCK;
+	dss->dispc_clk_source  = DSS_CLK_SRC_FCK;
 	dss->lcd_clk_source[0] = DSS_CLK_SRC_FCK;
 	dss->lcd_clk_source[1] = DSS_CLK_SRC_FCK;
 
