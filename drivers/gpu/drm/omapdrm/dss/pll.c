@@ -118,9 +118,10 @@ struct dss_pll *dss_pll_find_by_src(struct dss_device *dss,
 		DSSDBGLN("pll.c/dss_pll_find_by_src/DSS_CLK_SRC_PLL2_1|DSS_CLK_SRC_PLL2_2|DSS_CLK_SRC_PLL2_3");
 		DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, dsi1)");
 		pll = dss_pll_find(dss, "dsi1");
-		if (!pll)
+		if (!pll){
 			DSSDBGLN("pll.c/dss_pll_find_by_src/call/dss_pll_find(dss, video1)");
 			pll = dss_pll_find(dss, "video1");
+		}
 		return pll;
 	}
 }
