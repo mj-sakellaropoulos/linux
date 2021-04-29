@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2016 Paul Kocialkowski <contact@paulk.fr>
+ *
+ * 04/29/2021:
+ * Hansem Ro 					: Backlight, PWM LED, PWM GPTimer, Battery, and pinmux configs, and all other crucial platform support
+ * Michael John Sakellaropoulos : Added LCD powereg, Added required DSS nodes and graph_port connections for LCD2 over DPI
  */
 /dts-v1/;
 
