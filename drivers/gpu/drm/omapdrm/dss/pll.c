@@ -71,9 +71,10 @@ struct dss_pll *dss_pll_find(struct dss_device *dss, const char *name)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(dss->plls); ++i) {
-		if (dss->plls[i] && strcmp(dss->plls[i]->name, name) == 0)
+		if (dss->plls[i] && strcmp(dss->plls[i]->name, name) == 0){
 			DSSDBG("pll.c/dss_pll_find/FOUND PLL dss->plls[%d]\n", i);
 			return dss->plls[i];
+		}
 	}
 
 	DSSDBGLN("pll.c/dss_pll_find/PLL NOT FOUND");

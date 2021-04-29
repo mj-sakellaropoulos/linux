@@ -27,16 +27,19 @@ struct dss_video_pll {
 
 static void dss_dpll_enable_scp_clk(struct dss_video_pll *vpll)
 {
+	DSSDBGLN("video-pll.c/dss_dpll_enable_scp_clk/entry");
 	REG_MOD(vpll->clkctrl_base, 1, 14, 14); /* CIO_CLK_ICG */
 }
 
 static void dss_dpll_disable_scp_clk(struct dss_video_pll *vpll)
 {
+	DSSDBGLN("video-pll.c/dss_dpll_disable_scp_clk/entry");
 	REG_MOD(vpll->clkctrl_base, 0, 14, 14); /* CIO_CLK_ICG */
 }
 
 static void dss_dpll_power_enable(struct dss_video_pll *vpll)
 {
+	DSSDBGLN("video-pll.c/dss_dpll_power_enable/entry");
 	REG_MOD(vpll->clkctrl_base, 2, 31, 30); /* PLL_POWER_ON_ALL */
 
 	/*
@@ -48,17 +51,21 @@ static void dss_dpll_power_enable(struct dss_video_pll *vpll)
 
 static void dss_dpll_power_disable(struct dss_video_pll *vpll)
 {
+	DSSDBGLN("video-pll.c/dss_dpll_power_disable/entry");
 	REG_MOD(vpll->clkctrl_base, 0, 31, 30);	/* PLL_POWER_OFF */
 }
 
 static int dss_video_pll_enable(struct dss_pll *pll)
 {
+	DSSDBGLN("video-pll.c/dss_video_pll_enable/entry");
 	struct dss_video_pll *vpll = container_of(pll, struct dss_video_pll, pll);
 	int r;
 
 	r = dss_runtime_get(pll->dss);
 	if (r)
 		return r;
+	
+	DSSDBGLN("video-pll.c/dss_video_pll_enable/call/dss_runtime_get/OK");
 
 	dss_ctrl_pll_enable(pll, true);
 
@@ -68,11 +75,15 @@ static int dss_video_pll_enable(struct dss_pll *pll)
 	if (r)
 		goto err_reset;
 
+	DSSDBGLN("video-pll.c/dss_video_pll_enable/call/dss_pll_wait_reset_done/OK");
+
 	dss_dpll_power_enable(vpll);
 
+	DSSDBGLN("video-pll.c/dss_video_pll_enable/SUCCESS");
 	return 0;
 
 err_reset:
+	DSSDBGLN("video-pll.c/dss_video_pll_enable/goto err_reset");
 	dss_dpll_disable_scp_clk(vpll);
 	dss_ctrl_pll_enable(pll, false);
 	dss_runtime_put(pll->dss);
@@ -82,6 +93,7 @@ err_reset:
 
 static void dss_video_pll_disable(struct dss_pll *pll)
 {
+	DSSDBGLN("video-pll.c/dss_video_pll_disable/entry");
 	struct dss_video_pll *vpll = container_of(pll, struct dss_video_pll, pll);
 
 	dss_dpll_power_disable(vpll);
@@ -133,6 +145,8 @@ struct dss_pll *dss_video_pll_init(struct dss_device *dss,
 				   struct platform_device *pdev, int id,
 				   struct regulator *regulator)
 {
+	DSSDBGLN("video-pll.c/dss_video_pll_init/entry");
+	DSSDBG("video-pll.c/dss_video_pll_init/params(dss, pdev, %d, regulator)\n", id);
 	const char * const reg_name[] = { "pll1", "pll2" };
 	const char * const clkctrl_name[] = { "pll1_clkctrl", "pll2_clkctrl" };
 	const char * const clkin_name[] = { "video1_clk", "video2_clk" };
@@ -145,31 +159,40 @@ struct dss_pll *dss_video_pll_init(struct dss_device *dss,
 	int r;
 
 	/* PLL CONTROL */
-
+	DSSDBG("video-pll.c/dss_video_pll_init/call/platform_get_resource_byname(name=%s)\n", reg_name[id]);
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, reg_name[id]);
+	DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_ioremap_resource(pll)");
 	pll_base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(pll_base))
+	if (IS_ERR(pll_base)){
+		DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_ioremap_resource(pll)/FAILED");
 		return ERR_CAST(pll_base);
-
+	}
 	/* CLOCK CONTROL */
 
+	DSSDBG("video-pll.c/dss_video_pll_init/call/platform_get_resource_byname(name=%s)\n", clkctrl_name[id]);
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
 		clkctrl_name[id]);
+	DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_ioremap_resource(clkctrl)");
 	clkctrl_base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(clkctrl_base))
+	if (IS_ERR(clkctrl_base)){
+		DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_ioremap_resource(clkctrl)/FAILED");
 		return ERR_CAST(clkctrl_base);
+	}
 
 	/* CLKIN */
-
+	DSSDBG("video-pll.c/dss_video_pll_init/call/devm_clk_get(name=%s)\n", clkin_name[id]);
 	clk = devm_clk_get(&pdev->dev, clkin_name[id]);
 	if (IS_ERR(clk)) {
 		DSSERR("can't get video pll clkin\n");
 		return ERR_CAST(clk);
 	}
 
+	DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_kzalloc");
 	vpll = devm_kzalloc(&pdev->dev, sizeof(*vpll), GFP_KERNEL);
-	if (!vpll)
+	if (!vpll){
+		DSSDBGLN("video-pll.c/dss_video_pll_init/call/devm_kzalloc/FAILED");
 		return ERR_PTR(-ENOMEM);
+	}
 
 	vpll->dev = &pdev->dev;
 	vpll->clkctrl_base = clkctrl_base;
@@ -188,10 +211,12 @@ struct dss_pll *dss_video_pll_init(struct dss_device *dss,
 	if (r)
 		return ERR_PTR(r);
 
+	DSSDBGLN("video-pll.c/dss_video_pll_init/SUCCESS");
 	return pll;
 }
 
 void dss_video_pll_uninit(struct dss_pll *pll)
 {
+	DSSDBG("video-pll.c/dss_video_pll_uninit/entry/params(%d)\n", (int)pll->id);
 	dss_pll_unregister(pll);
 }

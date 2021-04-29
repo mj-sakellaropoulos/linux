@@ -116,36 +116,6 @@
 	};
 };
 
-&dss {
-	compatible = "ti,omap4-dss";
-	status = "ok";
-	pinctrl-names = "default";
-	pinctrl-0 = <&dss_dpi_pins>;
-	connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-	connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-	
-	dispc@0  {
-		status = "ok";
-	};
-
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		dss_dpi_port: port@0 {
-			data-lines = <24>;
-			reg = <1>;
-			connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-			connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-			dpi_out_0: endpoint@0 {
-				connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-				connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
-				data-lines = <24>;
-				remote-endpoint = <&panel_dpi_in>;
-			};
-		};
-	};
-};
-
 &dsi1 {
 	status = "disabled";
 };
@@ -364,4 +334,35 @@
 
 &twl_usb_comparator {
 	usb-supply = <&vusb>;
+};
+
+&dss {
+	compatible = "ti,omap4-dss";
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&dss_dpi_pins>;
+	connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+	connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+	vdda_video-supply = <&v1v8>;
+	
+	dispc@0  {
+		status = "ok";
+	};
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		dss_dpi_port: port@0 {
+			data-lines = <24>;
+			reg = <1>;
+			connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+			connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+			dpi_out_0: endpoint@0 {
+				connector_type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+				connector-type = <17>; //drm_mode.c , DRM_MODE_CONNECTOR_DPI
+				data-lines = <24>;
+				remote-endpoint = <&panel_dpi_in>;
+			};
+		};
+	};
 };

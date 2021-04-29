@@ -1251,7 +1251,7 @@ static int dss_init_ports(struct dss_device *dss)
 		}
 	}
 
-	DSSDBGLN("dss.c/dss_probe/dss_init_ports/NO PORTS");
+	DSSDBGLN("dss.c/dss_probe/dss_init_ports/SUCCESS");
 	return 0;
 
 error:
