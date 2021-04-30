@@ -2205,6 +2205,31 @@ static const struct panel_desc hitachi_tx23d38vm0caa = {
 	},
 };
 
+static const struct drm_display_mode hydis_hv070ws1_105_mode = {
+	.clock = 51200,
+	.hdisplay = 1024,
+	.hsync_start = 1024 + 160,
+	.hsync_end = 1024 + 160 + 10,
+	.htotal = 1024 + 160 + 10 + 150,
+	.vdisplay = 600, 
+	.vsync_start = 600 + 12,
+	.vsync_end = 600 + 12 + 3,
+	.vtotal = 600 + 12 + 3 + 20,
+};
+
+static const struct panel_desc hydis_hv070ws1_105 = {
+	.modes = &hydis_hv070ws1_105_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 154,
+		.height = 90,
+	},
+	.connector_type = DRM_MODE_CONNECTOR_DPI,
+	.bus_format = MEDIA_BUS_FMT_RBG888_1X24,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH | DRM_BUS_FLAG_PIXDATA_SAMPLE_NEGEDGE,
+};
+
 static const struct drm_display_mode innolux_at043tn24_mode = {
 	.clock = 9000,
 	.hdisplay = 480,
@@ -4266,6 +4291,9 @@ static const struct of_device_id platform_of_match[] = {
 		.compatible = "hit,tx23d38vm0caa",
 		.data = &hitachi_tx23d38vm0caa
 	}, {
+		.compatible = "hydis,hv070ws1-105",
+		.data = &hydis_hv070ws1_105,
+	},{
 		.compatible = "innolux,at043tn24",
 		.data = &innolux_at043tn24,
 	}, {
