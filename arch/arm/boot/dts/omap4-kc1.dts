@@ -156,7 +156,9 @@
 		interrupts = <3 IRQ_TYPE_EDGE_FALLING /* gpio_35 TOUCH_IRQ_1 */
 			4 IRQ_TYPE_EDGE_FALLING /* gpio_36 TOUCH_IRQ_2 */
 			>;
-		reset-gpios = <&gpio1 18 GPIO_ACTIVE_LOW>; /* gpio_18; configuration uncertain */
+		reset-gpios = <&gpio1 18 GPIO_ACTIVE_LOW
+				&gpio3 8 GPIO_ACTIVE_LOW
+				>;
 	};
 };
 
@@ -224,4 +226,10 @@
 
 &twl_usb_comparator {
 	usb-supply = <&vusb>;
+};
+
+&vaux3 {
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-always-on;
 };

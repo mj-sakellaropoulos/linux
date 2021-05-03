@@ -102,11 +102,11 @@
 /* dsi status ok needed for 5.12-rc8+ */
 
 &dsi1 {
-	status = "ok";
+	status = "disabled";
 	vdd-supply = <&vcxio>;
 };
 
 &dsi2 {
-	status = "ok";
+	status = "disabled";
 	vdd-supply = <&vcxio>;
 };
