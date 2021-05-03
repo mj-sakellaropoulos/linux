@@ -87,11 +87,13 @@ static bool ili210x_touchdata_to_coords(const u8 *touchdata,
 					unsigned int *x, unsigned int *y,
 					unsigned int *z)
 {
-	if (touchdata[0] & BIT(finger))
-		return false;
+	//This breaks it on kc1
+	//if (touchdata[0] & BIT(finger))
+	//	return false;
 
-	*x = get_unaligned_be16(touchdata + 1 + (finger * 4) + 0);
-	*y = get_unaligned_be16(touchdata + 1 + (finger * 4) + 2);
+	//TODO : introduce variant for little endian
+	*x = get_unaligned_le16(touchdata + 1 + (finger * 4) + 0);
+	*y = get_unaligned_le16(touchdata + 1 + (finger * 4) + 2);
 
 	return true;
 }
