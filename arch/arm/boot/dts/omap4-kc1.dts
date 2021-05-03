@@ -5,10 +5,21 @@
 /dts-v1/;
 
 #include "omap443x.dtsi"
+#include "omap4-kc1-wlan.dtsi"
+#include "omap4-kc1-bl.dtsi"
+#include "omap4-kc1-dss.dtsi"
 
 / {
 	model = "Amazon Kindle Fire (first generation)";
 	compatible = "amazon,omap4-kc1", "ti,omap4430", "ti,omap4";
+
+    aliases {
+        mmc0 = &mmc2;
+        mmc1 = &mmc1;
+        mmc2 = &mmc3;
+        mmc3 = &mmc4;
+        mmc4 = &mmc5;
+    };
 
 	memory@80000000 {
 		device_type = "memory";
@@ -29,6 +40,11 @@
 			pwms = <&twl_pwm 1 7812500>;
 			max-brightness = <127>;
 		};
+	};
+
+	bat: battery {
+		compatible = "simple-battery";
+		/* Documentation/devicetree/bindings/power/supply/battery.yaml */
 	};
 };
 
@@ -108,6 +124,13 @@
 
 	clock-frequency = <400000>;
 
+	ti,bq27541@55 {
+		compatible = "ti,bq27541";
+		reg = <0x55>;
+		monitored-battery = <&bat>;
+		/* Documentation/devicetree/bindings/power/supply/bq27xxx.yaml */
+	};
+
 	twl: twl@48 {
 		reg = <0x48>;
 		/* IRQ# = 7 */
@@ -125,6 +148,18 @@
 	pinctrl-0 = <&i2c2_pins>;
 
 	clock-frequency = <400000>;
+	
+	touchscreen@41 {
+		compatible = "ilitek,ili210x";
+		reg = <0x41>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <3 IRQ_TYPE_EDGE_FALLING /* gpio_35 TOUCH_IRQ_1 */
+			4 IRQ_TYPE_EDGE_FALLING /* gpio_36 TOUCH_IRQ_2 */
+			>;
+		reset-gpios = <&gpio1 18 GPIO_ACTIVE_LOW
+				&gpio3 8 GPIO_ACTIVE_LOW
+				>;
+	};
 };
 
 &i2c3 {
@@ -139,6 +174,21 @@
 	pinctrl-0 = <&i2c4_pins>;
 
 	clock-frequency = <400000>;
+
+	tmp@48 {
+		compatible = "ti,tmp105";
+		reg = <0x48>;
+		status = "okay";
+	};
+
+	charger@6 {
+		compatible = "summit,smb347";
+		reg = <0x06>;
+		summit,usb-current-limit-microamp = <500000>;
+		summit,enable-usb-charging;
+		monitored-battery = <&bat>;
+		/* Documentation/devicetree/bindings/power/supply/summit,smb347-charger.yaml */
+	};
 };
 
 &mmc1 {
@@ -176,4 +226,10 @@
 
 &twl_usb_comparator {
 	usb-supply = <&vusb>;
+};
+
+&vaux3 {
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-always-on;
 };
