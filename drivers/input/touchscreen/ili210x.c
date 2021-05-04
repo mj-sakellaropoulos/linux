@@ -78,8 +78,27 @@ static int ili210x_read_reg(struct i2c_client *client,
 
 static int ili210x_read_touch_data(struct i2c_client *client, u8 *data)
 {
-	return ili210x_read_reg(client, REG_TOUCHDATA,
-				data, ILI210X_DATA_SIZE);
+	return ili210x_read_reg(client, REG_TOUCHDATA, data, ILI210X_DATA_SIZE);
+}
+
+static int ili210x_read_panel_info(struct i2c_client *client, u8 *data)
+{
+	return ili210x_read_reg(client, REG_PANEL_INFO, data, ILI210X_DATA_SIZE);
+}
+
+static bool ili210x_get_resolution(struct i2c_client *client, unsigned int *x_max, unsigned int *y_max)
+{
+	u8 data[ILI210X_DATA_SIZE] = { 0 };
+	int ret = ili210x_read_panel_info(client, data);
+
+	if(ret != 0){
+		return false;
+	}
+
+	*x_max = get_unaligned_le16(data);
+	*y_max = get_unaligned_le16(data + 2);
+
+	return true;
 }
 
 static bool ili210x_touchdata_to_coords(const u8 *touchdata,
@@ -441,14 +460,25 @@ static int ili210x_i2c_probe(struct i2c_client *client,
 	priv->chip = chip;
 	i2c_set_clientdata(client, priv);
 
+	unsigned int x_max;
+	unsigned int y_max;
+
+	bool res_success = ili210x_get_resolution(client, &x_max, &y_max);
+
 	/* Setup input device */
 	input->name = "ILI210x Touchscreen";
 	input->id.bustype = BUS_I2C;
 
 	/* Multi touch */
 	max_xy = (chip->resolution ?: SZ_64K) - 1;
-	input_set_abs_params(input, ABS_MT_POSITION_X, 0, max_xy, 0, 0);
-	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, max_xy, 0, 0);
+	if(res_success){
+		dev_err(dev, "GOT RESOLUTION %dx%d", x_max, y_max);
+		input_set_abs_params(input, ABS_MT_POSITION_X, 0, x_max, 0, 0);
+		input_set_abs_params(input, ABS_MT_POSITION_Y, 0, y_max, 0, 0);
+	}else{
+		input_set_abs_params(input, ABS_MT_POSITION_X, 0, max_xy, 0, 0);
+		input_set_abs_params(input, ABS_MT_POSITION_Y, 0, max_xy, 0, 0);
+	}
 	if (priv->chip->has_pressure_reg)
 		input_set_abs_params(input, ABS_MT_PRESSURE, 0, 0xa, 0, 0);
 	touchscreen_parse_properties(input, true, &priv->prop);
